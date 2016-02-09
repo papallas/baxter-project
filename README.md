@@ -1,5 +1,4 @@
-# baxter-project
-Third year final project - The Robot Shopkeeper
+# Third year final project - The Robot Shopkeeper
 
 This is my third year project, aiming to develop an integrated robotics system using a Baxter robot to allow Baxter to be able to run a sweet shop and respond to customers.
 
