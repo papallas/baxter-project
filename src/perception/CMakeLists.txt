@@ -188,8 +188,12 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(example src/example.cpp)
-target_link_libraries(example ${catkin_LIBRARIES})
+add_executable(trial src/trial.cpp)
+target_link_libraries(trial ${catkin_LIBRARIES})
+
+add_executable(find_bowl src/find_bowl.cpp)
+target_link_libraries(find_bowl ${catkin_LIBRARIES})
+
 
 add_executable(save_cloud src/save_cloud.cpp)
 target_link_libraries(save_cloud ${catkin_LIBRARIES})
@@ -199,6 +203,3 @@ target_link_libraries(view_cloud ${catkin_LIBRARIES})
 
 add_executable(view_circle src/view_circle.cpp)
 target_link_libraries(view_circle ${catkin_LIBRARIES})
-
-add_executable(find_bowl src/find_bowl.cpp)
-target_link_libraries(find_bowl ${catkin_LIBRARIES})
