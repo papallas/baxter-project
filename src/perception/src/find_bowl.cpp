@@ -22,6 +22,16 @@
 
 #include <geometry_msgs/PointStamped.h>
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/search/search.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/segmentation/region_growing.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/segmentation/region_growing_rgb.h>
+
 ros::Publisher pub;
 ros::Publisher pointPub;
 
@@ -39,16 +49,89 @@ Eigen::Affine3d create_rotation_matrix(double ax, double ay, double az) {
 void
 cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
 {
-  std::cout << cloud_msg.header.frame_id << std::endl;
+  //std::cout << cloud_msg.header.frame_id << std::endl;
 
   // Convert the PointCloud2 to a PCL cloud
   pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
   pcl::fromROSMsg (cloud_msg, pcl_cloud);
 
-  std::cout << pcl_cloud.header.frame_id << std::endl;
+  //std::cout << pcl_cloud.header.frame_id << std::endl;
 
   // Save PCL cloud as an ASCII file
   //pcl::io::savePCDFileASCII ("circle_found.pcd", pcl_cloud);
+
+  pcl::search::Search <pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGB> > (new pcl::search::KdTree<pcl::PointXYZRGB>);
+  // Convert the PointCloud2 to a PCL cloud
+  pcl::PointCloud<pcl::PointXYZRGB> cloud2;
+  pcl::fromROSMsg (cloud_msg, cloud2);
+
+  pcl::IndicesPtr indices (new std::vector <int>);
+  pcl::PassThrough<pcl::PointXYZRGB> pass;
+  pass.setInputCloud (cloud2.makeShared());
+  pass.setFilterFieldName ("z");
+  pass.setFilterLimits (0.0, 1.0);
+  pass.filter (*indices);
+
+  pcl::RegionGrowingRGB<pcl::PointXYZRGB> reg;
+  reg.setInputCloud (cloud2.makeShared());
+  reg.setIndices (indices);
+  reg.setSearchMethod (tree);
+  reg.setDistanceThreshold (10);
+  reg.setPointColorThreshold (10);
+  reg.setRegionColorThreshold (9);
+  reg.setMinClusterSize (400);
+  reg.setMaxClusterSize (100000000);
+  reg.setNumberOfNeighbours (30);
+  reg.setSmoothnessThreshold (3.0 / 180.0 * M_PI);
+  //reg.setCurvatureThreshold (1.0);
+
+  std::vector <pcl::PointIndices> clusters;
+  reg.extract (clusters);
+
+  std::cout << "Number of clusters is equal to " << clusters.size () << std::endl;
+  std::cout << "First cluster has " << clusters[0].indices.size () << " points." << std::endl;
+  std::cout << "These are the indices of the points of the initial" <<
+  std::endl << "cloud that belong to the first cluster:" << std::endl;
+  int counter = 0;
+
+
+  pcl::PointCloud<pcl::PointXYZRGB> whiteCloud;
+  for (int i = 0; i < clusters.size(); i++) {
+    //pcl::PointIndices::Ptr indices(new pcl::PointIndices);
+    pcl::PointIndices indices = clusters[i];
+    std::cout << "Cluster " << i << " size is "<< indices.indices.size() << std::endl;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZRGB>);
+    for (int j = 0; j < indices.indices.size(); j++) {
+      cloud_cluster->points.push_back(cloud2.points[j]);
+    }
+    float R = 0;
+    float G = 0;
+    float B = 0;
+    for (int j = 0; j < indices.indices.size(); j++) {
+      R += cloud_cluster->points[j].r;
+      G += cloud_cluster->points[j].g;
+      B += cloud_cluster->points[j].b;
+    }
+    std::cout << R << " " << G << " " << B << std::endl;
+    R /= cloud_cluster->points.size();
+    G /= cloud_cluster->points.size();
+    B /= cloud_cluster->points.size();
+    std::cout << "Average cluster colour: R = " << R << ", G = " << G << ", B = " << B << std::endl;
+    /*if ((R + G + B) < 25 && (R + G + B) > 18) {
+      pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, indices, whiteCloud);
+    }*/
+    if (i == 1) {
+      pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, indices, whiteCloud);
+    }
+  }
+  pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud();
+  pcl::visualization::CloudViewer viewer ("Cluster viewer");
+  //viewer.showCloud(whiteCloud.makeShared());
+  viewer.showCloud(colored_cloud);
+
+  while (!viewer.wasStopped ())
+  {
+  }
 
   // Create model variables to store the circle model values in
   pcl::ModelCoefficients coefficients;
@@ -61,7 +144,7 @@ cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setMaxIterations(1000);
   // Max distance of 1 cm between points
-  seg.setDistanceThreshold (0.01);
+  seg.setDistanceThreshold (0.03);
   // Set limit on size of bowl - not search too big or too small circles
   seg.setRadiusLimits(0.05,0.12);
 
@@ -80,14 +163,13 @@ cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
   //std::cout<< ros_coefficients;
 
   // Initialise new point cloud of just bowl rim pointcloud and output to text
-  // file
+  // filedices.size(); j++) {
+      cloud_cluster->points.push_back(cloud2.points[j]);
+    }
+    float R = 0;
   pcl::PointCloud<pcl::PointXYZ>::Ptr final(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::copyPointCloud<pcl::PointXYZ>(pcl_cloud, inliers, *final);
   pcl::io::savePCDFileASCII ("circle_found.pcd", *final);
-
-  //Using a transform listener, create a point using the coefficients
-  tf::TransformListener listener;
-  tf::StampedTransform transform;
 
   geometry_msgs::PointStamped pt;
   geometry_msgs::PointStamped pt_transformed;
@@ -98,8 +180,29 @@ cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
   pt.point.y = ros_coefficients.values[1];
   pt.point.z = ros_coefficients.values[2];
 
+  std::cout << pt << std::endl;
+
   // Publish the created point for viewing in rViz
   pointPub.publish(pt);
+
+  //Using a transform listener, create a point using the coefficients
+  tf::TransformListener listener;
+  tf::StampedTransform transform;
+  ros::Time time = ros::Time::now();
+
+
+  try{
+    listener.waitForTransform("/torso", cloud_msg.header.frame_id, time, ros::Duration(10.0));
+    //listener.lookupTransform("/torso", frame, time, transform);
+    listener.transformPoint("/torso", pt, pt_transformed);
+
+  }
+  catch (tf::TransformException ex){
+       ROS_ERROR("%s",ex.what());
+  }
+  //pt_transformed = pt.transform(transform);
+  //pt_transformed = transform * pt;
+  std::cout << pt_transformed << std::endl;
 }
 
 

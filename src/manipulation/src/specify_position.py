@@ -38,10 +38,10 @@ def ik_test(limb, positions):
         x = 0.80
     if x < 0.50:
          x = 0.50
-    if y > -0.10:
-        y = -0.10
-    if y < -0.40:
-       y = -0.40
+    #if y > -0.10:
+    #    y = -0.10
+    #if y < -0.40:
+    #   y = -0.40
     if z > 0.2:
         z = 0.2
     if z < 0.0:
@@ -51,7 +51,7 @@ def ik_test(limb, positions):
     ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
     iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
     ikreq = SolvePositionIKRequest()
-    hdr = Header(stamp=rospy.Time.now(), frame_id='base')
+    hdr = Header(stamp=rospy.Time.now(), frame_id='torso')
     poses = {
         'left': PoseStamped(
             header=hdr,
