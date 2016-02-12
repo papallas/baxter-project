@@ -32,112 +32,103 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/segmentation/region_growing_rgb.h>
 
-ros::Publisher pub;
 ros::Publisher pointPub;
 
-Eigen::Affine3d create_rotation_matrix(double ax, double ay, double az) {
-  Eigen::Affine3d rx =
-      Eigen::Affine3d(Eigen::AngleAxisd(ax, Eigen::Vector3d(1, 0, 0)));
-  Eigen::Affine3d ry =
-      Eigen::Affine3d(Eigen::AngleAxisd(ay, Eigen::Vector3d(0, 1, 0)));
-  Eigen::Affine3d rz =
-      Eigen::Affine3d(Eigen::AngleAxisd(az, Eigen::Vector3d(0, 0, 1)));
-  return rz * ry * rx;
+std::vector <pcl::PointIndices> getObjectClusters(pcl::PointCloud<pcl::PointXYZ> cloud)
+{
+    pcl::search::Search<pcl::PointXYZ>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZ> > (new pcl::search::KdTree<pcl::PointXYZ>);
+    pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
+    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimator;
+    normal_estimator.setSearchMethod (tree);
+    normal_estimator.setInputCloud (cloud.makeShared());
+    normal_estimator.setKSearch (50);
+    normal_estimator.compute (*normals);
+
+    pcl::IndicesPtr indices (new std::vector <int>);
+    pcl::PassThrough<pcl::PointXYZ> pass;
+    pass.setInputCloud (cloud.makeShared());
+    pass.setFilterFieldName ("z");
+    pass.setFilterLimits (0.0, 1.0);
+    pass.filter (*indices);
+
+    pcl::RegionGrowing<pcl::PointXYZ, pcl::Normal> reg;
+    reg.setMinClusterSize (200);
+    reg.setMaxClusterSize (1000000);
+    reg.setSearchMethod (tree);
+    reg.setNumberOfNeighbours (30);
+    reg.setInputCloud (cloud.makeShared());
+    reg.setIndices (indices);
+    reg.setInputNormals (normals);
+    reg.setSmoothnessThreshold (20.0 / 180.0 * M_PI);
+    reg.setCurvatureThreshold (1.0);
+
+    std::vector <pcl::PointIndices> clusters;
+    reg.extract (clusters);
+    return clusters;
 }
 
-// Create a callback method on the receipt of a PointCloud2 object
-void
-cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
+std::vector <pcl::PointIndices> getColourClusters(pcl::PointCloud<pcl::PointXYZRGB> cloud)
 {
-  //std::cout << cloud_msg.header.frame_id << std::endl;
+    pcl::search::Search <pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGB> > (new pcl::search::KdTree<pcl::PointXYZRGB>);    pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
+    pcl::IndicesPtr indices (new std::vector <int>);
+    pcl::PassThrough<pcl::PointXYZRGB> pass;
+    pass.setInputCloud (cloud.makeShared());
+    pass.setFilterFieldName ("z");
+    pass.setFilterLimits (0.0, 1.0);
+    pass.filter (*indices);
 
-  // Convert the PointCloud2 to a PCL cloud
-  pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
-  pcl::fromROSMsg (cloud_msg, pcl_cloud);
+    pcl::RegionGrowingRGB<pcl::PointXYZRGB> reg;
+    reg.setInputCloud (cloud.makeShared());
+    reg.setIndices (indices);
+    reg.setSearchMethod (tree);
+    reg.setDistanceThreshold (10);
+    reg.setPointColorThreshold (6);
+    reg.setRegionColorThreshold (5);
+    reg.setMinClusterSize (600);
 
-  //std::cout << pcl_cloud.header.frame_id << std::endl;
+    std::vector <pcl::PointIndices> clusters;
+    reg.extract (clusters);
+    return clusters;
+}
 
-  // Save PCL cloud as an ASCII file
-  //pcl::io::savePCDFileASCII ("circle_found.pcd", pcl_cloud);
-
-  pcl::search::Search <pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGB> > (new pcl::search::KdTree<pcl::PointXYZRGB>);
-  // Convert the PointCloud2 to a PCL cloud
-  pcl::PointCloud<pcl::PointXYZRGB> cloud2;
-  pcl::fromROSMsg (cloud_msg, cloud2);
-
-  pcl::IndicesPtr indices (new std::vector <int>);
-  pcl::PassThrough<pcl::PointXYZRGB> pass;
-  pass.setInputCloud (cloud2.makeShared());
-  pass.setFilterFieldName ("z");
-  pass.setFilterLimits (0.0, 1.0);
-  pass.filter (*indices);
-
-  pcl::RegionGrowingRGB<pcl::PointXYZRGB> reg;
-  reg.setInputCloud (cloud2.makeShared());
-  reg.setIndices (indices);
-  reg.setSearchMethod (tree);
-  reg.setDistanceThreshold (10);
-  reg.setPointColorThreshold (10);
-  reg.setRegionColorThreshold (9);
-  reg.setMinClusterSize (400);
-  reg.setMaxClusterSize (100000000);
-  reg.setNumberOfNeighbours (30);
-  reg.setSmoothnessThreshold (3.0 / 180.0 * M_PI);
-  //reg.setCurvatureThreshold (1.0);
-
-  std::vector <pcl::PointIndices> clusters;
-  reg.extract (clusters);
-
-  std::cout << "Number of clusters is equal to " << clusters.size () << std::endl;
-  std::cout << "First cluster has " << clusters[0].indices.size () << " points." << std::endl;
-  std::cout << "These are the indices of the points of the initial" <<
-  std::endl << "cloud that belong to the first cluster:" << std::endl;
-  int counter = 0;
-
-
+pcl::PointCloud<pcl::PointXYZRGB> getWhiteObjectCloud(std::vector <pcl::PointIndices> clusters,
+                pcl::PointCloud<pcl::PointXYZRGB> coloured_cloud)
+{
   pcl::PointCloud<pcl::PointXYZRGB> whiteCloud;
-  for (int i = 0; i < clusters.size(); i++) {
-    //pcl::PointIndices::Ptr indices(new pcl::PointIndices);
-    pcl::PointIndices indices = clusters[i];
-    std::cout << "Cluster " << i << " size is "<< indices.indices.size() << std::endl;
+  for (std::vector<pcl::PointIndices>::const_iterator it = clusters.begin(); it != clusters.end(); ++it)
+  {
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZRGB>);
-    for (int j = 0; j < indices.indices.size(); j++) {
-      cloud_cluster->points.push_back(cloud2.points[j]);
-    }
     float R = 0;
     float G = 0;
     float B = 0;
-    for (int j = 0; j < indices.indices.size(); j++) {
-      R += cloud_cluster->points[j].r;
-      G += cloud_cluster->points[j].g;
-      B += cloud_cluster->points[j].b;
+    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
+    {
+       cloud_cluster->points.push_back (coloured_cloud.points[*pit]);
+       R += float(coloured_cloud.points[*pit].r);
+       G += float(coloured_cloud.points[*pit].g);
+       B += float(coloured_cloud.points[*pit].b);
     }
-    std::cout << R << " " << G << " " << B << std::endl;
     R /= cloud_cluster->points.size();
     G /= cloud_cluster->points.size();
     B /= cloud_cluster->points.size();
-    std::cout << "Average cluster colour: R = " << R << ", G = " << G << ", B = " << B << std::endl;
-    /*if ((R + G + B) < 25 && (R + G + B) > 18) {
-      pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, indices, whiteCloud);
-    }*/
-    if (i == 1) {
-      pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, indices, whiteCloud);
+    float average = (R + G + B)/3.0;
+    //std::cout << "Average total = " << average << std::endl;
+    // IF OBJECT IS WHITE/NEAR WHITE
+    if (average > 180) {
+      pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, it->indices, whiteCloud);
     }
   }
-  pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud();
-  pcl::visualization::CloudViewer viewer ("Cluster viewer");
-  //viewer.showCloud(whiteCloud.makeShared());
-  viewer.showCloud(colored_cloud);
 
-  while (!viewer.wasStopped ())
-  {
-  }
+  return whiteCloud;
+}
 
+pcl_msgs::ModelCoefficients getBowlInCloud(pcl::PointCloud<pcl::PointXYZRGB> whiteCloud)
+{
   // Create model variables to store the circle model values in
   pcl::ModelCoefficients coefficients;
   pcl::PointIndices inliers;
   // Create the segmentation object
-  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  pcl::SACSegmentation<pcl::PointXYZRGB> seg;
   seg.setOptimizeCoefficients (true);
   // Using RANSAC to find a circle within a 2D space
   seg.setModelType (pcl::SACMODEL_CIRCLE3D);
@@ -149,78 +140,58 @@ cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
   seg.setRadiusLimits(0.05,0.12);
 
   // Set the PCL cloud as the input and segment into the inliers/coefficients
-  seg.setInputCloud (pcl_cloud.makeShared());
+  seg.setInputCloud (whiteCloud.makeShared());
   seg.segment (inliers, coefficients);
 
   // Convert the model coefficients to a set of publishable coefficients
   pcl_msgs::ModelCoefficients ros_coefficients;
   pcl_conversions::fromPCL(coefficients, ros_coefficients);
 
-  // Publish on output
-  pub.publish(ros_coefficients);
+  return ros_coefficients;
+}
 
-  // Print coefficients to terminal
-  //std::cout<< ros_coefficients;
+// Create a callback method on the receipt of a PointCloud2 object
+void
+cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
+{
+  // Convert the PointCloud2 to a PCL cloud
+  pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+  pcl::fromROSMsg (cloud_msg, pcl_cloud);
 
-  // Initialise new point cloud of just bowl rim pointcloud and output to text
-  // filedices.size(); j++) {
-      cloud_cluster->points.push_back(cloud2.points[j]);
-    }
-    float R = 0;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr final(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::copyPointCloud<pcl::PointXYZ>(pcl_cloud, inliers, *final);
-  pcl::io::savePCDFileASCII ("circle_found.pcd", *final);
+  pcl::PointCloud<pcl::PointXYZRGB> pcl_color;
+  pcl::fromROSMsg (cloud_msg, pcl_color);
+
+  std::vector <pcl::PointIndices> clusters = getColourClusters(pcl_color);
+
+  pcl::PointCloud<pcl::PointXYZRGB> whiteCloud = getWhiteObjectCloud(clusters,
+                pcl_color);
+
+  pcl_msgs::ModelCoefficients bowl_coefficients = getBowlInCloud(whiteCloud);
 
   geometry_msgs::PointStamped pt;
   geometry_msgs::PointStamped pt_transformed;
   pt.header = cloud_msg.header;
   pt.header.frame_id = cloud_msg.header.frame_id;
   pt.header.stamp = ros::Time();
-  pt.point.x = ros_coefficients.values[0];
-  pt.point.y = ros_coefficients.values[1];
-  pt.point.z = ros_coefficients.values[2];
-
-  std::cout << pt << std::endl;
+  pt.point.x = bowl_coefficients.values[0];
+  pt.point.y = bowl_coefficients.values[1];
+  pt.point.z = bowl_coefficients.values[2];
 
   // Publish the created point for viewing in rViz
   pointPub.publish(pt);
-
-  //Using a transform listener, create a point using the coefficients
-  tf::TransformListener listener;
-  tf::StampedTransform transform;
-  ros::Time time = ros::Time::now();
-
-
-  try{
-    listener.waitForTransform("/torso", cloud_msg.header.frame_id, time, ros::Duration(10.0));
-    //listener.lookupTransform("/torso", frame, time, transform);
-    listener.transformPoint("/torso", pt, pt_transformed);
-
-  }
-  catch (tf::TransformException ex){
-       ROS_ERROR("%s",ex.what());
-  }
-  //pt_transformed = pt.transform(transform);
-  //pt_transformed = transform * pt;
-  std::cout << pt_transformed << std::endl;
 }
-
-
 
 int
 main (int argc, char** argv)
 {
   // Initialize ROS
-  ros::init (argc, argv, "my_pcl_tutorial");
+  ros::init (argc, argv, "find_bowl");
   ros::NodeHandle nh;
 
   // Subscribe to the table objects PointCloud2 from the kinect
   ros::Subscriber sub = nh.subscribe ("/tabletop_pointcloud_1", 1, cloud_cb);
 
-  // Create a ROS publisher for the output model coefficients
-  pub = nh.advertise<pcl_msgs::ModelCoefficients> ("output", 1);
-
-  pointPub = nh.advertise<geometry_msgs::PointStamped> ("outputPoint", 1);
+  pointPub = nh.advertise<geometry_msgs::PointStamped> ("initialBowlPos", 1);
 
   // Spin
   ros::spin ();
