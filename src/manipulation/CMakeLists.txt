@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -164,7 +166,7 @@ include_directories(
 # install(DIRECTORY include/${PROJECT_NAME}/
 #   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 #   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
+#   PATTERN ".svn" EXCLUDEconvertBowlToFrame
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
@@ -175,7 +177,7 @@ include_directories(
 # )
 
 #############
-## Testing ##
+## Testing ##convertBowlToFrame
 #############
 
 ## Add gtest based cpp test target and link libraries
@@ -187,5 +189,5 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(move_to_bowl src/move_to_bowl.cpp)
-target_link_libraries(move_to_bowl ${catkin_LIBRARIES})
+add_executable(bowl_pos_transform src/bowl_pos_transform.cpp)
+target_link_libraries(bowl_pos_transform ${catkin_LIBRARIES})

@@ -15,6 +15,7 @@ from geometry_msgs.msg import (
     Point,
     Quaternion,
 )
+from geometry_msgs.msg import PointStamped
 from std_msgs.msg import Header
 from std_msgs.msg import String
 
@@ -29,26 +30,14 @@ from baxter_interface import CHECK_VERSION
 
 import tf
 
-def ik_test(limb, positions):
+def pointReceive(point):
     # Convert specified arm position to floats
-    x = float(positions[0])
-    y = float(positions[1])
-    z = float(positions[2])
-    # Cap at baxter's coordinate limits so as not to hit anything
-    if x > 0.80:
-        x = 0.80
-    if x < 0.50:
-         x = 0.50
-    #if y > -0.10:
-    #    y = -0.10
-    #if y < -0.40:
-    #   y = -0.40
-    if z > 0.2:
-        z = 0.2
-    if z < 0.0:
-        z = 0.0
+    x = float(point.point[0]])
+    y = float(point.point[1])
+    z = 0.0
 
-    rospy.init_node("rsdk_ik_move")
+    # Cap at baxter's coordinate limits so as not to hit anything
+
     ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
     iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
     ikreq = SolvePositionIKRequest()
@@ -59,7 +48,7 @@ def ik_test(limb, positions):
             pose=Pose(
                 position=Point(
                     x=x, #x=0.656982770038,
-                    y=y+5, #y=-0.852598021641,
+                    y=y-0.05, #y=-0.852598021641,
                     z=z, #z=0.0388609422173,
                 ),
                 orientation=Quaternion(
@@ -69,10 +58,13 @@ def ik_test(limb, positions):
                     w=0, #w=0.261868353356,
                 ),
             ),
-        ),chatter
+        )
+        'right': PoseStamped(
+            header=hdr,
+            pose=Pose(
                 position=Point(
                     x=x, #x=0.656982770038,
-                    y=y+5, #y=-0.852598021641,
+                    y=y+0.05, #y=-0.852598021641,
                     z=z, #z=0.0388609422173,
                 ),
                 orientation=Quaternion(
@@ -85,7 +77,7 @@ def ik_test(limb, positions):
         ),
     }
 
-    ikreq.pose_stamp.append(poses[limb])
+    ikreq.pose_stamp.append(poses["left"])
     try:
         rospy.wait_for_service(ns, 5.0)
         resp = iksvc(ikreq)
@@ -112,7 +104,7 @@ def ik_test(limb, positions):
         print "Response Message:\n", resp
         print "X = "+str(x)+", Y = "+str(y)+", Z = "+str(z)
 
-        arm = baxter_interface.Limb(limb)
+        arm = baxter_interface.Limb("left")
         while not rospy.is_shutdown():
             arm.set_joint_positions(limb_joints)
             rospy.sleep(0.1)
@@ -123,38 +115,12 @@ def ik_test(limb, positions):
 
     return 0
 
+def listener():
+    rospy.init_node("sdaadsads");
 
-def main():
-    """RSDK Inverse Kinematics Example
+    pub = rospy.Subscriber('/scooppos', PointStamped, pointReceive)
 
-    A simple example of using the Rethink Inverse Kinematics
-    Service which returns the joint angles and validity for
-    a requested Cartesian Pose.
-
-    Run this example, passing the *limb* to test, and the
-    example will call the Service with a sample Cartesian
-    Pose, pre-defined in the example code, printing the
-    response of whether a valid joint solution was found,
-    and if so, the corresponding joint angles.
-    """
-    arg_fmt = argparse.RawDescriptionHelpFormatter
-    parser = argparse.ArgumentParser(formatter_class=arg_fmt,
-                                     description=main.__doc__)
-    parser.add_argument(
-        '-l', '--limb', choices=['left', 'right'], required=True,
-        help="the limb to test"
-    )
-    parser.add_argument(
-        '-p', '--position', nargs = 3, required=True,
-        help="please add an x, y and z coordinate"
-    )
-    args = parser.parse_args(rospy.myargv()[1:])
-
-    pub = rospy.Subscriber('bowlPos', String, pointReceive)
-
-
-
-    return ik_test(args.limb, [args.position[0], args.position[1], args.position[2]])
+    rospy.spin()
 
 if __name__ == '__main__':
-    sys.exit(main())
+    listener()
