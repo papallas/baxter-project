@@ -15,10 +15,6 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/concatenate.h>
 #include <pcl/common/transforms.h>
-#include <Eigen/Geometry>
-
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
 
 #include <geometry_msgs/PointStamped.h>
 

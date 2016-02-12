@@ -1,5 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PointStamped.h>
+#include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 
 ros::Publisher pub;
 
@@ -61,7 +63,7 @@ int
 main (int argc, char** argv)
 {
   // Initialize ROS
-  ros::init (argc, argv, "find_bowl");
+  ros::init (argc, argv, "average_bowl");
   ros::NodeHandle nh;
 
   // Subscribe to the table objects PointCloud2 from the kinect
