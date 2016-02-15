@@ -126,5 +126,16 @@ import tf
 #
 # if __name__ == '__main__':
 #     listener()
-def main():
-    print "Moving Baxter to scoop sweets"
+def add_two_ints_client():
+    rospy.wait_for_service('bowl_pos_req')
+    try:
+        bowl_pos_req = rospy.ServiceProxy('bowl_pos_req', RequestBowlPos)
+        resp = bowl_pos_req("")
+        print resp.x
+        return resp.x, resp.y, resp.z
+    except rospy.ServiceException, e:
+        print "Service call failed: %s"%e
+
+if __name__ == "__main__":
+    string = add_two_ints_client()
+    print string

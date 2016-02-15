@@ -31,7 +31,6 @@ bool add(manipulation::RequestBowlPos::Request &req,
   res.x = baxterBowl.point.x;
   res.y = baxterBowl.point.y;
   res.z = baxterBowl.point.z;
-  res.frame_id = baxterBowl.header.frame_id;
   return true;
 }
 
@@ -47,7 +46,7 @@ main (int argc, char** argv)
 
   pointPub = nh.advertise<geometry_msgs::PointStamped> ("scooppos", 1);
 
-  ros::ServiceServer service = nh.advertiseService("add_two_ints", add);
+  ros::ServiceServer service = nh.advertiseService("bowl_pos_req", add);
 
   // Spin
   ros::spin ();
