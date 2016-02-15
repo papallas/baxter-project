@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   roscpp
   sensor_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -53,9 +54,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate services in the 'srv' folder
 # add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
+#  FILES
+#  RequestBowlPos.srv
 # )
 
 ## Generate actions in the 'action' folder
@@ -193,7 +193,6 @@ target_link_libraries(trial ${catkin_LIBRARIES})
 
 add_executable(find_bowl src/find_bowl.cpp)
 target_link_libraries(find_bowl ${catkin_LIBRARIES})
-
 
 add_executable(save_cloud src/save_cloud.cpp)
 target_link_libraries(save_cloud ${catkin_LIBRARIES})

@@ -114,36 +114,41 @@ pcl::PointCloud<pcl::PointXYZRGB> getWhiteObjectCloud(std::vector <pcl::PointInd
       pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, it->indices, whiteCloud);
     }
   }
+  // View white objects in pointcloud viewer
+  /*pcl::visualization::CloudViewer viewer("Cloud Viewer");
+  viewer.showCloud(whiteCloud.makeShared());
+  while (!viewer.wasStopped ())
+  {}*/
 
   return whiteCloud;
 }
 
 pcl_msgs::ModelCoefficients getBowlInCloud(pcl::PointCloud<pcl::PointXYZRGB> whiteCloud)
 {
-  // Create model variables to store the circle model values in
-  pcl::ModelCoefficients coefficients;
-  pcl::PointIndices inliers;
-  // Create the segmentation object
-  pcl::SACSegmentation<pcl::PointXYZRGB> seg;
-  seg.setOptimizeCoefficients (true);
-  // Using RANSAC to find a circle within a 2D space
-  seg.setModelType (pcl::SACMODEL_CIRCLE3D);
-  seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setMaxIterations(1000);
-  // Max distance of 1 cm between points
-  seg.setDistanceThreshold (0.03);
-  // Set limit on size of bowl - not search too big or too small circles
-  seg.setRadiusLimits(0.05,0.12);
+    // Create model variables to store the circle model values in
+   pcl::ModelCoefficients coefficients;
+   pcl::PointIndices inliers;
+   // Create the segmentation object
+   pcl::SACSegmentation<pcl::PointXYZRGB> seg;
+   seg.setOptimizeCoefficients (true);
+   // Using RANSAC to find a circle within a 2D space
+   seg.setModelType (pcl::SACMODEL_CIRCLE3D);
+   seg.setMethodType (pcl::SAC_RANSAC);
+   seg.setMaxIterations(1000);
+   // Max distance of 1 cm between points
+   seg.setDistanceThreshold (0.03);
+   // Set limit on size of bowl - not search too big or too small circles
+   seg.setRadiusLimits(0.05,0.12);
 
-  // Set the PCL cloud as the input and segment into the inliers/coefficients
-  seg.setInputCloud (whiteCloud.makeShared());
-  seg.segment (inliers, coefficients);
+   // Set the PCL cloud as the input and segment into the inliers/coefficients
+   seg.setInputCloud (whiteCloud.makeShared());
+   seg.segment (inliers, coefficients);
 
-  // Convert the model coefficients to a set of publishable coefficients
-  pcl_msgs::ModelCoefficients ros_coefficients;
-  pcl_conversions::fromPCL(coefficients, ros_coefficients);
+   // Convert the model coefficients to a set of publishable coefficients
+   pcl_msgs::ModelCoefficients ros_coefficients;
+   pcl_conversions::fromPCL(coefficients, ros_coefficients);
 
-  return ros_coefficients;
+   return ros_coefficients;
 }
 
 // Create a callback method on the receipt of a PointCloud2 object
