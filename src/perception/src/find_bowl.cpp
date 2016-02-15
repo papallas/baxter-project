@@ -29,6 +29,7 @@
 #include <pcl/segmentation/region_growing_rgb.h>
 
 ros::Publisher pointPub;
+pcl_msgs::ModelCoefficients set_coefficients;
 
 std::vector <pcl::PointIndices> getObjectClusters(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
@@ -136,19 +137,27 @@ pcl_msgs::ModelCoefficients getBowlInCloud(pcl::PointCloud<pcl::PointXYZRGB> whi
    seg.setMethodType (pcl::SAC_RANSAC);
    seg.setMaxIterations(1000);
    // Max distance of 1 cm between points
-   seg.setDistanceThreshold (0.03);
+   seg.setDistanceThreshold (0.15);
    // Set limit on size of bowl - not search too big or too small circles
    seg.setRadiusLimits(0.05,0.12);
 
    // Set the PCL cloud as the input and segment into the inliers/coefficients
    seg.setInputCloud (whiteCloud.makeShared());
-   seg.segment (inliers, coefficients);
+   if (whiteCloud.points.size() != 0) {
+     seg.segment (inliers, coefficients);
+     std::cout << inliers.indices.size() << ", " << whiteCloud.points.size() << std::endl;
 
-   // Convert the model coefficients to a set of publishable coefficients
-   pcl_msgs::ModelCoefficients ros_coefficients;
-   pcl_conversions::fromPCL(coefficients, ros_coefficients);
+     // Convert the model coefficients to a set of publishable coefficients
+     pcl_msgs::ModelCoefficients ros_coefficients;
+     pcl_conversions::fromPCL(coefficients, ros_coefficients);
 
-   return ros_coefficients;
+     set_coefficients = ros_coefficients;
+
+     return ros_coefficients;
+   }
+   else {
+     return set_coefficients;
+   }
 }
 
 // Create a callback method on the receipt of a PointCloud2 object
