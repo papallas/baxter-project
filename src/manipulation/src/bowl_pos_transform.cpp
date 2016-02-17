@@ -38,7 +38,7 @@ int
 main (int argc, char** argv)
 {
   // Initialize ROS
-  ros::init (argc, argv, "move_to_bowl");
+  ros::init (argc, argv, "bowl_transform");
   ros::NodeHandle nh;
 
   // Subscribe to the table objects PointCloud2 from the kinect
