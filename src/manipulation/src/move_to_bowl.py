@@ -3,6 +3,7 @@
 import argparse
 import sys
 import struct
+import threading
 
 from copy import copy
 
@@ -33,13 +34,15 @@ import tf
 
 import math
 
+import Queue
+
 # move a limb
 # update pose in x and y direction
 # initialise ros node
 rospy.init_node("pick_up_sweets", anonymous = True)
 
 class locateAndMove():
-
+    
     def __init__(self):
         self.right_interface = baxter_interface.Limb("right")
         self.left_interface = baxter_interface.Limb("left")
@@ -66,22 +69,49 @@ class locateAndMove():
         self.right_pose = [self.init_right_x, self.init_right_y, self.init_right_z,     \
                   self.right_roll, self.right_pitch, self.right_yaw]
 
-    def move_both_arms_to_point(self, x, y):
-        #UPDATE RIGHT ARM FIRST IF POSITION ON RIGHT
-        if y < self.right_pose[1]:
-            poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3], self.right_pose[4], self.right_pose[5]]
-            self.baxter_ik_move("right", poseRight)
-            # UPDATE LEFT ARM
-            poseLeft = [x, y+0.10, self.left_pose[2], self.left_pose[3], self.left_pose[4], self.left_pose[5]]
-            self.baxter_ik_move("left", poseLeft)
+    def move_to_point(self, limb, x, y, z):
+        if limb == "both":
+            #UPDATE RIGHT ARM FIRST IF POSITION ON RIGHT
+            if y < self.right_pose[1]:
+                poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+                self.baxter_ik_move("right", poseRight)
+                # UPDATE LEFT ARM
+                poseLeft = [x, y+0.10, self.left_pose[2], self.left_pose[3], self.left_pose[4], self.left_pose[5]]
+                self.baxter_ik_move("left", poseLeft)
 
-        #UPDATE LEFT ARM FIRST IF POSITION ON LEFT
-        else:
-            # UPDATE LEFT ARM
-            poseLeft = [x, y+0.10, self.left_pose[2], self.left_pose[3], self.left_pose[4], self.left_pose[5]]
-            self.baxter_ik_move("left", poseLeft)
-            poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+            #UPDATE LEFT ARM FIRST IF POSITION ON LEFT
+            else:
+                # UPDATE LEFT ARM
+                poseLeft = [x, y+0.10, self.left_pose[2], self.left_pose[3], self.left_pose[4], self.left_pose[5]]
+                self.baxter_ik_move("left", poseLeft)
+                poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+                self.baxter_ik_move("right", poseRight)
+        if limb == "right":
+            #if y > self.left_pose[1] - 0.3:
+                # UPDATE LEFT ARM
+            #poseLeft = [x-0.15, y+0.3, z + 0.2, self.left_pose[3], self.left_pose[4], self.left_pose[5]]
+            #poseLeft = [x, y+0.10, self.left_pose[2], self.left_pose[3], self.left_pose[4], self.left_pose[5]]
+            #left_thread = threading.Thread(self.baxter_ik_move("left", poseLeft))
+            poseRight = [x, y, z, self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+            #poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3], self.right_pose[4], self.right_pose[5]]
             self.baxter_ik_move("right", poseRight)
+            self.right_pose = [x, y, z, self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+
+            #else:
+                #pass
+                #poseRight = [x, y, z + 0.02, self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+                #self.baxter_ik_move("right", poseRight)
+
+    def rotate_to_pos(self, limb, r, p, y):
+        if limb == "right":
+            poseRight = [self.right_pose[0], self.right_pose[1], self.right_pose[2], r, p, y]
+            self.baxter_ik_move("right", poseRight)
+
+    def move_and_rotate(self, limb, x, y, z, r, p, ya):
+        if limb == "right":
+            poseRight = [x, y, z, r, p, ya]
+            self.baxter_ik_move("right", poseRight)
+            self.right_pose = [x, y, z, r, p, ya]
 
     def list_to_pose_stamped(self, pose_list, target_frame):
         pose_msg = PoseStamped()
@@ -140,7 +170,7 @@ class locateAndMove():
                 self.right_interface.move_to_joint_positions(limb_joints)
         else:
             # display invalid move message on head display
-            self.splash_screen("Invalid", "move")
+            #self.splash_screen("Invalid", "move")
             # little point in continuing so exit with error message
             print "requested move =", rpy_pose
             sys.exit("ERROR - baxter_ik_move - No valid joint configuration found")
@@ -200,8 +230,34 @@ class locateAndMove():
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
-    def grasp_gripper(self):
-        return
+    # FIRST BASIC SCOOP TRIAL
+    def grab_sweets_from_above(self, x, y, z):
+        # MOVE TO SEE SWEETS WITH CAMERA
+        #self.move_to_point("right",x+0.03,y,z+0.05)
+        # MOVE TO START SCOOP POSITION
+
+        #self.move_to_point("right",x,y-0.07,z+0.04)
+        self.print_arm_pose()
+        #self.rotate_to_pos("right", self.right_pose[3], -0.8, 1.3)
+
+        self.move_and_rotate("right", x, y-0.05, z, self.right_pose[3], -0.8, 1.3)
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.08, self.right_pose[2]-0.04,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+    # FIRST BASIC SCOOP TRIAL
+    def scoop_from_side(self, x, y, z):
+        # MOVE TO SEE SWEETS WITH CAMERA
+        #self.move_to_point("right",x+0.03,y,z+0.05)
+        # MOVE TO START SCOOP POSITION
+
+        #self.move_to_point("right",x,y-0.07,z+0.04)
+        self.print_arm_pose()
+        #self.rotate_to_pos("right", self.right_pose[3], -0.8, 1.3)
+
+        self.move_and_rotate("right", x, y, z, self.right_pose[3], self.right_pose[4], self.right_pose[5])
+
+
 
 if __name__ == '__main__':
     "Setting up Baxter movement"
@@ -213,15 +269,23 @@ if __name__ == '__main__':
     print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
 
     #FOR EXAMPLE IF KINECT FRAME NOT WORKING
-    x = 0.640673882798
-    y = -0.05758041438
-    z = -0.196769654272
+    #x = 0.640673882798
+    #y = -0.05758041438
+    #z = -0.196769654272
 
     print "Cuurent bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
 
+    # MAKE SURE THE Z VALUE BAXTER IS GIVEN DOES NOT HIT THE TABLE - CAN
+    # SLOWLY APPROACH THE TABLE FURTHER ON GRASPING
+    z = z + 0.03
+    if z < 0.18:
+        z = z + 0.03
     #move.move_both_arms_to_point(0.45, 0.2)
+    #move.grab_sweets_from_above(x, y, z)
+    move.scoop_from_side(x, y, z)
 
     #move.move_both_arms_to_point(x, y)
+    #move.move_down("right",z)
 
     #move.prepare_to_scoop()
 
