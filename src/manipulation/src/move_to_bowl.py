@@ -6,6 +6,7 @@ import struct
 import threading
 
 from copy import copy
+import numpy as np
 
 import rospy
 import actionlib
@@ -34,7 +35,8 @@ import tf
 
 import math
 
-import Queue
+from std_msgs.msg import UInt16
+
 
 # move a limb
 # update pose in x and y direction
@@ -42,10 +44,14 @@ import Queue
 rospy.init_node("pick_up_sweets", anonymous = True)
 
 class locateAndMove():
-    
+
     def __init__(self):
         self.right_interface = baxter_interface.Limb("right")
         self.left_interface = baxter_interface.Limb("left")
+
+        self.right_interface.set_joint_position_speed(0.1)
+        self.left_interface.set_joint_position_speed(0.1)
+
 
         # START ARMS IN INITIAL UNTUCKED POSITION
         self.init_left_x = 0.5793                      # x     = front back
@@ -69,11 +75,37 @@ class locateAndMove():
         self.right_pose = [self.init_right_x, self.init_right_y, self.init_right_z,     \
                   self.right_roll, self.right_pitch, self.right_yaw]
 
+        self._left_grip = baxter_interface.Gripper('left', CHECK_VERSION)
+        self._right_grip = baxter_interface.Gripper('right', CHECK_VERSION)
+        # calibrate
+        #self._right_grip.calibrate()
+        # self._left_grip_state   = 'open'
+        self._right_grip_state  = 'open'
+        # control parameters
+        self._pub_rate          = rospy.Publisher('robot/joint_state_publish_rate',
+                                         UInt16, queue_size=10)
+        self._rate              = 500.0  # Hz
+        self._max_speed         = .05
+        self._arm               = 'none'
+        print("Getting robot state... ")
+        self._rs = baxter_interface.RobotEnable(CHECK_VERSION)
+        self._init_state = self._rs.state().enabled
+        print("Enabling robot... ")
+        self._rs.enable()
+        # set joint state publishing to 500Hz
+        self._pub_rate.publish(self._rate)
+
+        self.twist = np.array([[.0],[.0],[.0],[.0],[.0],[.0]])
+
+        self.MINZ = -0.1985
+
+
     def move_to_point(self, limb, x, y, z):
         if limb == "both":
             #UPDATE RIGHT ARM FIRST IF POSITION ON RIGHT
             if y < self.right_pose[1]:
-                poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3], self.right_pose[4], self.right_pose[5]]
+                poseRight = [x, y-0.10, self.right_pose[2], self.right_pose[3],
+                self.right_pose[4], self.right_pose[5]]
                 self.baxter_ik_move("right", poseRight)
                 # UPDATE LEFT ARM
                 poseLeft = [x, y+0.10, self.left_pose[2], self.left_pose[3], self.left_pose[4], self.left_pose[5]]
@@ -112,6 +144,10 @@ class locateAndMove():
             poseRight = [x, y, z, r, p, ya]
             self.baxter_ik_move("right", poseRight)
             self.right_pose = [x, y, z, r, p, ya]
+        if limb == "left":
+            poseLeft = [x, y, z, r, p, ya]
+            self.baxter_ik_move("left", poseLeft)
+            self.left_pose = [x, y, z, r, p, ya]
 
     def list_to_pose_stamped(self, pose_list, target_frame):
         pose_msg = PoseStamped()
@@ -144,6 +180,9 @@ class locateAndMove():
 
 
     def baxter_ik_move(self, limb, rpy_pose):
+        print str(rpy_pose[2])
+        if (rpy_pose[2] <  self.MINZ):
+            rpy_pose[2] =  self.MINZ
         quaternion_pose = self.list_to_pose_stamped(rpy_pose, "base")
 
         node = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
@@ -239,11 +278,61 @@ class locateAndMove():
         #self.move_to_point("right",x,y-0.07,z+0.04)
         self.print_arm_pose()
         #self.rotate_to_pos("right", self.right_pose[3], -0.8, 1.3)
+        self._right_grip.open()
 
-        self.move_and_rotate("right", x, y-0.05, z, self.right_pose[3], -0.8, 1.3)
-
-        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.08, self.right_pose[2]-0.04,
+        self.move_and_rotate("right", x, y, z+0.03,
         self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", x, y, z-0.09,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self._right_grip.close()
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.15,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.3, self.right_pose[2],
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self._right_grip.open()
+
+    # FIRST BASIC SCOOP TRIAL
+    def shake_in_bowl(self, x, y, z):
+        # MOVE TO SEE SWEETS WITH CAMERA
+        #self.move_to_point("right",x+0.03,y,z+0.05)
+        # MOVE TO START SCOOP POSITION
+
+        #self.move_to_point("right",x,y-0.07,z+0.04)
+        self.print_arm_pose()
+        #self.rotate_to_pos("right", self.right_pose[3], -0.8, 1.3)
+        self._right_grip.open()
+
+        self.move_and_rotate("right", x, y, z+0.06,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", x, y, self.MINZ,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.right_interface.set_joint_position_speed(0.3)
+
+        self.move_and_rotate("right", x, y-0.01, self.right_pose[2]+0.002,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", x, y+0.01, self.right_pose[2],
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", x, y-0.01, self.right_pose[2]-0.002,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.right_interface.set_joint_position_speed(0.1)
+
+        self._right_grip.close()
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.09,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.3, self.right_pose[2],
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self._right_grip.open()
 
     # FIRST BASIC SCOOP TRIAL
     def scoop_from_side(self, x, y, z):
@@ -255,8 +344,59 @@ class locateAndMove():
         self.print_arm_pose()
         #self.rotate_to_pos("right", self.right_pose[3], -0.8, 1.3)
 
-        self.move_and_rotate("right", x, y, z, self.right_pose[3], self.right_pose[4], self.right_pose[5])
 
+        self.move_and_rotate("right", x, y-0.05, z+0.08, self.right_pose[3], -0.8, 1.3)
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.06, self.right_pose[2]-0.04,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", self.right_pose[0]+0.02, self.right_pose[1]+0.01, self.right_pose[2]-0.04,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.01, self.right_pose[2],
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self._right_grip.close()
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.09,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.3, self.right_pose[2]+0.09,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self._right_grip.open()
+
+    def grab_bowl_and_tilt(self, x, y, z):
+
+        self._left_grip.calibrate()
+        self._right_grip.calibrate()
+        #self._left_grip.open()
+        self.move_and_rotate("left", x, y+0.07, z+0.05, self.left_pose[3], self.left_pose[4], self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2],
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.01, self.left_pose[2]-0.095,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self._left_grip.close()
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.1,
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        self.left_interface.set_joint_position_speed(0.5)
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.1,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.1,
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        self.left_interface.set_joint_position_speed(0.1)
+
+    def moveToSweets(self):
+
+        self.move_and_rotate("right", 0.75, -0.25, 0.15, self.right_pose[3]
+            , self.right_pose[4], self.right_pose[5])
 
 
 if __name__ == '__main__':
@@ -277,16 +417,22 @@ if __name__ == '__main__':
 
     # MAKE SURE THE Z VALUE BAXTER IS GIVEN DOES NOT HIT THE TABLE - CAN
     # SLOWLY APPROACH THE TABLE FURTHER ON GRASPING
-    z = z + 0.03
-    if z < 0.18:
-        z = z + 0.03
-    #move.move_both_arms_to_point(0.45, 0.2)
-    #move.grab_sweets_from_above(x, y, z)
-    move.scoop_from_side(x, y, z)
 
-    #move.move_both_arms_to_point(x, y)
-    #move.move_down("right",z)
+    # move.grab_sweets_from_above(x, y, z)
+    # rospy.sleep(5.0)
+    # [x, y, z] = move.get_pos_client()
+    # print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
+    #
+    # move.shake_in_bowl(x, y, z)
+    #
+    # rospy.sleep(5.0)
+    # [x, y, z] = move.get_pos_client()
+    # print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
+    #move.grab_bowl_and_tilt(x, y, z)
 
-    #move.prepare_to_scoop()
+    #rospy.sleep(5.0)
 
-    #move.grasp_gripper()
+    #[x, y, z] = move.get_pos_client()
+    #move.scoop_from_side(x, y, z)
+
+    move.moveToSweets()

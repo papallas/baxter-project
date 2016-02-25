@@ -15,7 +15,9 @@ std::vector<float> zVals(20,0.0);;
 void
 point_cb (const geometry_msgs::PointStamped point_msg)
 {
-  if (counter < 20) {
+  float frameCount = 20.0;
+  int frameInt = 20;
+  if (counter < frameInt) {
     xVals[counter] = point_msg.point.x;
     yVals[counter] = point_msg.point.y;
     zVals[counter] = point_msg.point.z;
@@ -23,7 +25,7 @@ point_cb (const geometry_msgs::PointStamped point_msg)
     counter++;
   }
 
-  if (counter == 20) {
+  if (counter == frameInt) {
     xVals.erase(xVals.begin());
     xVals.push_back(point_msg.point.x);
     yVals.erase(yVals.begin());
@@ -42,9 +44,9 @@ point_cb (const geometry_msgs::PointStamped point_msg)
     for(std::vector<float>::iterator it = zVals.begin(); it != zVals.end(); ++it)
       averageZ += *it;
 
-    averageX /= 20.0;
-    averageY /= 20.0;
-    averageZ /= 20.0;
+    averageX /= frameCount;
+    averageY /= frameCount;
+    averageZ /= frameCount;
 
     geometry_msgs::PointStamped pt;
     pt.header = point_msg.header;

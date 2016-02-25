@@ -66,7 +66,8 @@ std::vector <pcl::PointIndices> getObjectClusters(pcl::PointCloud<pcl::PointXYZ>
 
 std::vector <pcl::PointIndices> getColourClusters(pcl::PointCloud<pcl::PointXYZRGB> cloud)
 {
-    pcl::search::Search <pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGB> > (new pcl::search::KdTree<pcl::PointXYZRGB>);    pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
+    pcl::search::Search <pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGB> > (new pcl::search::KdTree<pcl::PointXYZRGB>);
+    pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
     pcl::IndicesPtr indices (new std::vector <int>);
     pcl::PassThrough<pcl::PointXYZRGB> pass;
     pass.setInputCloud (cloud.makeShared());
@@ -111,7 +112,8 @@ pcl::PointCloud<pcl::PointXYZRGB> getWhiteObjectCloud(std::vector <pcl::PointInd
     float average = (R + G + B)/3.0;
     //std::cout << "Average total = " << average << std::endl;
     // IF OBJECT IS WHITE/NEAR WHITE
-    if (average > 180) {
+    //std::cout << R << ", " << G << ", " << B << std::endl;
+    if (R > 150 && G > 150 && B > 150) {
       pcl::copyPointCloud<pcl::PointXYZRGB>(*cloud_cluster, it->indices, whiteCloud);
     }
   }
@@ -139,13 +141,13 @@ pcl_msgs::ModelCoefficients getBowlInCloud(pcl::PointCloud<pcl::PointXYZRGB> whi
    // Max distance of 1 cm between points
    seg.setDistanceThreshold (0.15);
    // Set limit on size of bowl - not search too big or too small circles
-   seg.setRadiusLimits(0.05,0.12);
+   seg.setRadiusLimits(0.05,0.10);
 
    // Set the PCL cloud as the input and segment into the inliers/coefficients
    seg.setInputCloud (whiteCloud.makeShared());
    if (whiteCloud.points.size() != 0) {
      seg.segment (inliers, coefficients);
-     std::cout << inliers.indices.size() << ", " << whiteCloud.points.size() << std::endl;
+     //std::cout << inliers.indices.size() << ", " << whiteCloud.points.size() << std::endl;
 
      // Convert the model coefficients to a set of publishable coefficients
      pcl_msgs::ModelCoefficients ros_coefficients;
