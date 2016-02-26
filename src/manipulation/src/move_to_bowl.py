@@ -405,15 +405,15 @@ if __name__ == '__main__':
 
     move.print_arm_pose()
 
-    [x, y, z] = move.get_pos_client()
-    print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
+    #[x, y, z] = move.get_pos_client()
+    #print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
 
     #FOR EXAMPLE IF KINECT FRAME NOT WORKING
     #x = 0.640673882798
     #y = -0.05758041438
     #z = -0.196769654272
 
-    print "Cuurent bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
+    #print "Cuurent bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
 
     # MAKE SURE THE Z VALUE BAXTER IS GIVEN DOES NOT HIT THE TABLE - CAN
     # SLOWLY APPROACH THE TABLE FURTHER ON GRASPING
