@@ -368,5 +368,3 @@ class FindSweets():
         self.find_places(corners)
 
 if __name__ == '__main__':
-    finder = FindSweets()
-    finder.find_ball_tray

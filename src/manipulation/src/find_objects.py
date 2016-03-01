@@ -42,6 +42,10 @@ high_v = 60
 #Create publisher to publish center of object detected
 pub = rospy.Publisher('opencv/center_of_object', Point, queue_size = 1)
 
+imageNumber = 1
+sweetArea = 0
+backgroundImage = 0
+
 #Thresholds image and stores position of object in (x,y) coordinates of the camera's frame, with origin at center.
 def callback(message):
     #Capturing image of web camera
@@ -50,103 +54,74 @@ def callback(message):
     cv_image = bridge.imgmsg_to_cv2(message, "bgr8")
     height, width, depth = cv_image.shape
 
-    # CONVERT AND PREPROCESS IMAGE
-    hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.bilateralFilter(hsv, 11, 17, 17)
-    edges = cv2.Canny(gray,30,200,apertureSize = 3)
-    # DILATE EDGE LINES
-    kernel = np.ones((5,5),np.uint8)
-    dilation = cv2.dilate(edges,kernel,iterations = 1)
-    # FIND 10 LARGEST CONTOURS IN IMAGE
-    (cnts, _) = cv2.findContours(dilation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    cns = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
-    mask = np.zeros(cv_image.shape[:2], dtype="uint8") * 25
+    #IF FIRST TIME THROUGH, GET BACKGROUND WITH NO SWEETS
+    if imageNumber == 1:
+        # CONVERT AND PREPROCESS IMAGE
+        hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.bilateralFilter(hsv, 11, 17, 17)
+        edges = cv2.Canny(gray,30,200,apertureSize = 3)
+        # DILATE EDGE LINES
+        kernel = np.ones((5,5),np.uint8)
+        dilation = cv2.dilate(edges,kernel,iterations = 1)
+        # FIND 10 LARGEST CONTOURS IN IMAGE
+        (cnts, _) = cv2.findContours(dilation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cns = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
+        mask = np.zeros(cv_image.shape[:2], dtype="uint8") * 25
 
-    # FIND RECTANGLE IN IMAGE AND SEGMENT - WHAT IF MULTIPLE RECTANGLES?
-    for cont in cns:
-        peri = cv2.arcLength(cont, True)
-        approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
-    	if len(approx) == 4:
-            #print("square is found")
-            cv2.drawContours(cv_image, cont, -1, (0,255,0), thickness = 3)
-    	    cv2.drawContours(mask, [cont], -1, 1, -1)
-            break
+        # FIND RECTANGLE IN IMAGE AND SEGMENT - WHAT IF MULTIPLE RECTANGLES?
+        for cont in cns:
+            peri = cv2.arcLength(cont, True)
+            approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
+        	if len(approx) == 4:
+                #print("square is found")
+                cv2.drawContours(cv_image, cont, -1, (0,255,0), thickness = 3)
+        	    cv2.drawContours(mask, [cont], -1, 1, -1)
+                sweetArea = cont
+                break
 
-    cv_image = cv2.bitwise_and(cv_image, cv_image, mask=mask)
-    cv2.imshow("Box", cv_image)
+        backgroundImage = cv2.bitwise_and(cv_image, cv_image, mask=mask)
 
     # SEGMENTING OF SWEETS
+    if imageNumber > 1:
+        # CONVERT AND PREPROCESS IMAGE
+        hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+        cv2.drawContours(cv_image, cont, -1, (0,255,0), thickness = 3)
 
-    cv_copy = cv_image
-    hsv = cv2.cvtColor(cv_copy, cv2.COLOR_BGR2GRAY)
-    hsv = (255 - hsv)
-
-    mask = cv2.inRange(hsv, 1,254)
-    hsv = cv2.bitwise_and(hsv, hsv,mask =mask)
-    ret,hsv2 = cv2.threshold(hsv,180,255,cv2.THRESH_BINARY)
-
-    contour,hier = cv2.findContours(hsv2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
-    mask2 = np.zeros(cv_image.shape[:2], dtype="uint8") * 25
-    for cnt in contour:
-        #cv2.drawContours(des,[cnt],0,255,-1)
-        cv2.drawContours(mask2, [cnt], 0, 255, -1)
-
-    kernel = np.ones((5,5),np.uint8)
-    mask2 = cv2.erode(mask2,kernel,iterations = 1)
-    mask2 = cv2.dilate(mask2,kernel,iterations = 2)
+        bgsubtractor = cv2.createBackgroundSubtractorMOG2()
+        
 
 
-    ret,hsv3 = cv2.threshold(hsv,180,255,cv2.THRESH_BINARY)
-    hsv3 = (255 - hsv3)
-    new_image = cv2.bitwise_and(hsv3, hsv3, mask=mask2)
+        cv_copy = cv_image
+        hsv = cv2.cvtColor(cv_copy, cv2.COLOR_BGR2GRAY)
+        hsv = (255 - hsv)
 
+        mask = cv2.inRange(hsv, 1,254)
+        hsv = cv2.bitwise_and(hsv, hsv,mask =mask)
+        ret,hsv2 = cv2.threshold(hsv,180,255,cv2.THRESH_BINARY)
 
-    sweetcontours,hier = cv2.findContours(mask2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        contour,hier = cv2.findContours(hsv2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
-    cv2.drawContours(cv_copy, sweetcontours, -1, (255,0,0), thickness = 3)
+        mask2 = np.zeros(cv_image.shape[:2], dtype="uint8") * 25
+        for cnt in contour:
+            #cv2.drawContours(des,[cnt],0,255,-1)
+            cv2.drawContours(mask2, [cnt], 0, 255, -1)
 
-    print len(sweetcontours)
+        kernel = np.ones((5,5),np.uint8)
+        mask2 = cv2.erode(mask2,kernel,iterations = 1)
+        mask2 = cv2.dilate(mask2,kernel,iterations = 3)
+        mask2 = cv2.erode(mask2,kernel,iterations = 2)
 
+        sweetcontours,hier = cv2.findContours(mask2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        for sweet in sweetcontours:
+            cv2.drawContours(cv_copy,[sweet],0,(255,0,0),3)
+            M = cv2.moments(sweet)
+            print "Sweet centre = x: " + str(int(M["m10"]/M["m00"])) + ", y: " + str(int(M["m01"]/M["m00"]))
 
-    cv2.imshow("HSV", new_image)
-    cv2.imshow("Edges", hsv3)
-    cv2.imshow("Blur", mask2)
-
-    cv2.imshow("Sweets", cv_copy)
-
-        # loop over the contours
-    # for c in cnts2:
-    #     if cv2.contourArea(c) < 50 and cv2.contourArea(c) > 10:
-    #     	# draw the contour and show it
-    #     	cv2.drawContours(cv_copy, [c], -1, (0, 255, 0), 2)
-    #cv2.drawContours(cv_copy, cnts2, -1, (255,0,0), thickness = 3)
-
-    # for cont in cnts:
-    #     cv2.drawContours(cv_copy, [cont], -1, (255,0,0), thickness = 2)
-    #     break
-    #cv2.drawContours(cv_image, cnts, -1, (0,255,0), thickness = 3)
-    #print len(cnts)
-
-    # Setup SimpleBlobDetector parameters.
-    # params = cv2.SimpleBlobDetector_Params()
-    #
-    # # Filter by Area.
-    # params.filterByArea = True
-    # params.minArea = 5
-    #
-    # detector = cv2.SimpleBlobDetector(params)
-    # #detector = cv2.SimpleBlobDetector_create(params)
-    # #detector = cv2.SimpleBlobDetector()
-    # keypoints = detector.detect(hsv)
-    #
-    # im_with_keypoints = cv2.drawKeypoints(hsv, keypoints, np.array([]), \
-    # (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-
-
-
+        cv2.imshow("Mask2", mask2)
+        cv2.imshow("Sweets", cv_copy)
 
     cv2.waitKey(3)
+    imageNumber = imageNumber + 1
 
 def getContourStat(contour,image):
   mask = np.zeros(image.shape,dtype="uint8")
@@ -172,15 +147,7 @@ def main():
     camera.exposure = 60
 
     #Create names for OpenCV images and orient them appropriately
-    cv2.namedWindow("Box", 1)
-    cv2.namedWindow("Final",2)
-    cv2.namedWindow("HSV",3)
-    cv2.namedWindow("Blur",4)
-    cv2.namedWindow("Thresh",5)
-    cv2.namedWindow("Edges",6)
-
-
-
+    cv2.namedWindow("Sweets", 1)
 
     #Initiate node for left hand camera
     rospy.init_node('right_hand_camera', anonymous=True)

@@ -398,12 +398,22 @@ class locateAndMove():
         self.move_and_rotate("right", 0.75, -0.25, 0.15, self.right_pose[3]
             , self.right_pose[4], self.right_pose[5])
 
+    def get_sweet_client(self):
+        print "\nRequesting sweet number on table"
+        rospy.wait_for_service('publish_sweet_info')
+        print "service found"
+        try:
+            sweet_number_req = rospy.ServiceProxy('publish_sweet_info', RequestSweetInfo)
+            resp = sweet_number_req("")
+            return resp.n
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
 
 if __name__ == '__main__':
     "Setting up Baxter movement"
     move = locateAndMove()
 
-    move.print_arm_pose()
 
     #[x, y, z] = move.get_pos_client()
     #print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
@@ -436,3 +446,5 @@ if __name__ == '__main__':
     #move.scoop_from_side(x, y, z)
 
     move.moveToSweets()
+    num = move.get_sweet_client()
+    print "There are "+str(num)+" sweets on the table"

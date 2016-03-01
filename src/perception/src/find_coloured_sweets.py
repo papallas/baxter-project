@@ -17,6 +17,8 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
 
+from manipulation.srv import *
+
 from cv_bridge import CvBridge, CvBridgeError
 
 from sensor_msgs.msg import Image
@@ -27,12 +29,10 @@ from std_msgs.msg import Header
 import std_srvs.srv
 from baxter_core_msgs.srv import SolvePositionIK, SolvePositionIKRequest
 
-#Create publisher to publish center of object detected
-pub = rospy.Publisher('opencv/center_of_object', Point, queue_size = 1)
-
-imageNumber = 1
 sweetArea = 0
 backgroundImage = 0
+
+global totalSweets
 
 #Thresholds image and stores position of object in (x,y) coordinates of the camera's frame, with origin at center.
 def callback(message):
@@ -60,9 +60,11 @@ def callback(message):
     cv2.drawContours(cv_image, greencnts, -1, (0,255,0), 3)
     cv2.drawContours(cv_image, pinkcnts, -1, (255,204,255), 3)
 
-    cv2.imshow("Sweets found", cv_image)
+    #cv2.imshow("Sweets found", cv_image)
     print "There are "+str(greennum + bluenum + pinknum)+" sweets overall"
-    #cv2.imshow("Sweets", cv_copy)
+    global totalSweets
+    totalSweets = greennum + bluenum + pinknum
+    print(totalSweets)
 
     cv2.waitKey(3)
 
@@ -87,8 +89,8 @@ def find_background(img):
             break
 
     img = cv2.bitwise_and(img, img, mask=mask)
-    cv2.imshow("Rectangular area", dilation)
-    cv2.imshow("Edges", img)
+    #cv2.imshow("Rectangular area", dilation)
+    #cv2.imshow("Edges", img)
 
     return img
 
@@ -116,16 +118,29 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
 
     return mask2, sweetcontours, sweetCount
 
+# convert image pixel to Baxter point
+def pixel_to_baxter(self, px, dist):
+    x = ((px[1] - (self.height / 2)) * self.cam_calib * dist)                \
+      + self.pose[0] + self.cam_x_offset
+    y = ((px[0] - (self.width / 2)) * self.cam_calib * dist)                 \
+      + self.pose[1] + self.cam_y_offset
+
+    return (x, y)
+
+def publish_sweet_handle(req):
+    print "request has string "+req.A
+    print totalSweets
+    return RequestSweetInfoResponse(totalSweets)
 
 #Subscribes to left hand camera image feed
 def main():
 
     rospy.init_node('view_sweet_cam', anonymous = True)
     image_topic = rospy.resolve_name("/cameras/right_hand_camera/image")
+    rospy.Subscriber(image_topic, Image, callback)
     #depth_topic = rospy.resolve_name("/camera/depth_registered/image_raw")
 
-    rospy.Subscriber(image_topic, Image, callback)
-
+    s = rospy.Service('publish_sweet_info', RequestSweetInfo, publish_sweet_handle)
 
     #Keep from exiting until this node is stopped
     rospy.spin()
