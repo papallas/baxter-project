@@ -45,20 +45,23 @@ def callback(message):
     simg = cv2.GaussianBlur(cv_image,(5,5),0)
     # find sweet rectangular area for sweets
     sweetarea = find_background(simg)
-    # Convert BGR to HSV
+    # Convert BGR to HS
     hsv = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2HSV)
 
-    bluemask, bluecnts = find_sweets(hsv, "blue",48, 139, 37, 255, 255, 255, 100, 6)
+    circleimg = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2GRAY);
+
+    bluemask, bluecnts, bluenum = find_sweets(hsv, "blue",48, 139, 37, 255, 255, 255, 100, 6)
     # 1,66,54,0,106,182,113,1
-    greenmask, greencnts = find_sweets(hsv, "green", 66, 54, 0, 106, 182, 113, 50, 6)
+    greenmask, greencnts, greennum = find_sweets(hsv, "green", 66, 54, 0, 106, 182, 113, 50, 6)
     # 1,142,0,70,200,160,255,7
-    pinkmask, pinkcnts = find_sweets(hsv, "pink", 134, 61, 46, 199, 255, 178, 10, 12)
+    pinkmask, pinkcnts, pinknum = find_sweets(hsv, "pink", 110, 0, 49, 193, 149, 177, 200, 8)
 
     cv2.drawContours(cv_image, bluecnts, -1, (255,0,0), 3)
     cv2.drawContours(cv_image, greencnts, -1, (0,255,0), 3)
     cv2.drawContours(cv_image, pinkcnts, -1, (255,204,255), 3)
 
     cv2.imshow("Sweets found", cv_image)
+    print "There are "+str(greennum + bluenum + pinknum)+" sweets overall"
     #cv2.imshow("Sweets", cv_copy)
 
     cv2.waitKey(3)
@@ -80,7 +83,6 @@ def find_background(img):
         peri = cv2.arcLength(cont, True)
         approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
         if len(approx) == 4:
-            print("square is found")
             cv2.drawContours(mask, [cont], -1, 1, -1)
             break
 
@@ -112,7 +114,7 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
 
     print "There are "+str(sweetCount)+" "+colour+" sweets"
 
-    return mask2, sweetcontours
+    return mask2, sweetcontours, sweetCount
 
 
 #Subscribes to left hand camera image feed
