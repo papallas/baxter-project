@@ -208,3 +208,6 @@ target_link_libraries(view_circle ${catkin_LIBRARIES})
 
 add_executable(average_bowl_pos src/average_bowl_pos.cpp)
 target_link_libraries(average_bowl_pos ${catkin_LIBRARIES})
+
+add_executable(second_average src/second_average.cpp)
+target_link_libraries(second_average ${catkin_LIBRARIES})

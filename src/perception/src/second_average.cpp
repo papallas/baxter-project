@@ -25,12 +25,12 @@ point_cb (const geometry_msgs::PointStamped point_msg)
     counter++;
   }
 
-  if (counter == frameInt) {
-    xVals.erase(xVals.begin());
+  if (counter >= frameInt) {
+    //xVals.erase(xVals.begin());
     xVals.push_back(point_msg.point.x);
-    yVals.erase(yVals.begin());
+    //yVals.erase(yVals.begin());
     yVals.push_back(point_msg.point.y);
-    zVals.erase(zVals.begin());
+    //zVals.erase(zVals.begin());
     zVals.push_back(point_msg.point.z);
 
     float averageX = 0;
@@ -44,9 +44,9 @@ point_cb (const geometry_msgs::PointStamped point_msg)
     for(std::vector<float>::iterator it = zVals.begin(); it != zVals.end(); ++it)
       averageZ += *it;
 
-    averageX /= frameCount;
-    averageY /= frameCount;
-    averageZ /= frameCount;
+    averageX /= counter;
+    averageY /= counter;
+    averageZ /= counter;
 
     geometry_msgs::PointStamped pt;
     pt.header = point_msg.header;
@@ -57,6 +57,8 @@ point_cb (const geometry_msgs::PointStamped point_msg)
     pt.point.z = averageZ;
 
     pub.publish(pt);
+
+    counter++;
   }
 }
 
@@ -65,13 +67,13 @@ int
 main (int argc, char** argv)
 {
   // Initialize ROS
-  ros::init (argc, argv, "average_bowl");
+  ros::init (argc, argv, "second_average");
   ros::NodeHandle nh;
 
   // Subscribe to the table objects PointCloud2 from the kinect
-  ros::Subscriber sub = nh.subscribe ("/initialBowlPos", 1, point_cb);
+  ros::Subscriber sub = nh.subscribe ("/bowlAverage", 1, point_cb);
 
-  pub = nh.advertise<geometry_msgs::PointStamped> ("bowlAverage", 1);
+  pub = nh.advertise<geometry_msgs::PointStamped> ("bowlPos", 1);
 
   // Spin
   ros::spin ();

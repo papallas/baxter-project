@@ -21,10 +21,12 @@ from manipulation.srv import *
 
 from cv_bridge import CvBridge, CvBridgeError
 
+import tf
+
 from sensor_msgs.msg import Image
 import baxter_interface
 #from moveit_commander import conversions
-from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
+from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, PointStamped
 from std_msgs.msg import Header
 import std_srvs.srv
 from baxter_core_msgs.srv import SolvePositionIK, SolvePositionIKRequest
@@ -33,6 +35,7 @@ sweetArea = 0
 backgroundImage = 0
 
 global totalSweets
+global centrelist
 
 #Thresholds image and stores position of object in (x,y) coordinates of the camera's frame, with origin at center.
 def callback(message):
@@ -50,21 +53,69 @@ def callback(message):
 
     circleimg = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2GRAY);
 
-    bluemask, bluecnts, bluenum = find_sweets(hsv, "blue",48, 139, 37, 255, 255, 255, 100, 6)
+    bluemask, bluecnts, bluenum, centres = find_sweets(hsv, "blue",48, 90, 37, 255, 255, 255, 100, 6)
     # 1,66,54,0,106,182,113,1
-    greenmask, greencnts, greennum = find_sweets(hsv, "green", 66, 54, 0, 106, 182, 113, 50, 6)
+    # greenmask, greencnts, greennum, centres1 = find_sweets(hsv, "green", 66, 54, 0, 106, 182, 113, 50, 6)
     # 1,142,0,70,200,160,255,7
-    pinkmask, pinkcnts, pinknum = find_sweets(hsv, "pink", 110, 0, 49, 193, 149, 177, 200, 8)
+    # pinkmask, pinkcnts, pinknum, centres2 = find_sweets(hsv, "pink", 110, 0, 49, 193, 149, 177, 200, 8)
 
     cv2.drawContours(cv_image, bluecnts, -1, (255,0,0), 3)
-    cv2.drawContours(cv_image, greencnts, -1, (0,255,0), 3)
-    cv2.drawContours(cv_image, pinkcnts, -1, (255,204,255), 3)
+    #cv2.drawContours(cv_image, greencnts, -1, (0,255,0), 3)
+    #cv2.drawContours(cv_image, pinkcnts, -1, (255,204,255), 3)
 
-    #cv2.imshow("Sweets found", cv_image)
-    print "There are "+str(greennum + bluenum + pinknum)+" sweets overall"
+    #cv2.imshow("Image",cv_image)
+
+    overallcentres = centres
+    centrepoints = []
+    for centre in overallcentres:
+        [x, y] = pixel_to_baxter(centre[0], centre[1])
+        #newcoords.append((x,y))
+        point = PointStamped()
+        point.header.frame_id = "right_hand_camera"
+        point.point.x = x
+        point.point.y = y
+        point.point.z = 0.46
+        centrepoints.append(point)
+
+    tl = tf.TransformListener()
+
+    try:
+        tl.waitForTransform("right_hand_camera", "torso", rospy.Time(0), rospy.Duration(10))
+        # (trans,rot) = tl.lookupTransform('right_hand_camera', 'torso', rospy.Time(0))
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        pass
+
+    pointlist = []
+
+    for i in range(0, len(centrepoints)):
+        newpoint = tl.transformPoint("torso", centrepoints[i])
+        pointlist.append(newpoint)
+
+    # FOR VISUALISING MULTIPLE POINTS
+    # pub = rospy.Publisher("sweet1", PointStamped, queue_size=10)
+    # pub.publish(newpoint)
+    # pub = rospy.Publisher("sweet2", PointStamped, queue_size=10)
+    # pub.publish(newpoint2)
+    # pub = rospy.Publisher("sweet3", PointStamped, queue_size=10)
+    # pub.publish(newpoint3)
+    # pub = rospy.Publisher("sweet4", PointStamped, queue_size=10)
+    # pub.publish(newpoint4)
+    # pub = rospy.Publisher("sweet5", PointStamped, queue_size=10)
+    # pub.publish(newpoint5)
+    # pub = rospy.Publisher("sweet6", PointStamped, queue_size=10)
+    # pub.publish(newpoint6)
+
+    # cv2.imshow("Sweets found", cv_image)
+    print "There are "+str(bluenum)+" sweets overall"
     global totalSweets
-    totalSweets = greennum + bluenum + pinknum
-    print(totalSweets)
+    totalSweets = bluenum
+
+    global centrelist
+    centrelist = []
+    for i in range(0, len(pointlist)):
+        centrelist.append(pointlist[i].point.x)
+        centrelist.append(pointlist[i].point.y)
+        centrelist.append(pointlist[i].point.z)
 
     cv2.waitKey(3)
 
@@ -98,6 +149,8 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
     lower = np.array([r1,g1,b1])
     upper = np.array([r2,g2,b2])
 
+    #cv2.imshow("HSV", hsv)
+
     mask = cv2.inRange(hsv, lower, upper)
 
     # filter and fill the mask
@@ -108,33 +161,56 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
 
     sweetCount = 0
     sweetcontours = []
+    sweetcentres = []
     for cnt in contour:
         if (cv2.contourArea(cnt) > area):
             cv2.drawContours(mask2, [cnt], 0, 255, 3)
             sweetcontours.append(cnt)
             sweetCount = sweetCount + 1
+            M = cv2.moments(cnt)
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
+            sweetcentres.append((cx, cy))
 
     print "There are "+str(sweetCount)+" "+colour+" sweets"
 
-    return mask2, sweetcontours, sweetCount
+    #cv2.imshow("bluemask", mask2)
+
+    return mask2, sweetcontours, sweetCount, sweetcentres
 
 # convert image pixel to Baxter point
-def pixel_to_baxter(self, px, dist):
-    x = ((px[1] - (self.height / 2)) * self.cam_calib * dist)                \
-      + self.pose[0] + self.cam_x_offset
-    y = ((px[0] - (self.width / 2)) * self.cam_calib * dist)                 \
-      + self.pose[1] + self.cam_y_offset
+def pixel_to_baxter(imagex, imagey):
+    # FROM CAMERA_INFO ROSTOPIC
+    # INTRINSIC CAMERA MATRIX (fx, 0, cx)
+                            # (0, fy, cy)
+                            # (0, 0, 1)
+    # K: [407.366831078, 0.0, 642.166170111, 0.0, 407.366831078, 387.185928717, 0.0, 0.0, 1.0]
+
+    fx = 407.366831078
+    fy = 407.366831078
+    cx = 642.166170111
+    cy = 387.185928717
+
+    # USING DISTANCE S FROM TABLE AND THE FACT THE 3D CAMERA COORD IS s*((u-cx)/fx, (v-cy)/fy, 1)
+
+    u = imagex
+    v = imagey
+    xl = (u - cx)/fx
+    yl = (v - cy)/fy
+
+    s = 0.45
+    x = xl * s
+    y = yl * s
 
     return (x, y)
 
 def publish_sweet_handle(req):
     print "request has string "+req.A
     print totalSweets
-    return RequestSweetInfoResponse(totalSweets)
+    return RequestSweetInfoResponse(totalSweets, centrelist)
 
 #Subscribes to left hand camera image feed
 def main():
-
     rospy.init_node('view_sweet_cam', anonymous = True)
     image_topic = rospy.resolve_name("/cameras/right_hand_camera/image")
     rospy.Subscriber(image_topic, Image, callback)
