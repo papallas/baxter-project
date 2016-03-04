@@ -62,7 +62,6 @@ point_cb (const geometry_msgs::PointStamped point_msg)
   }
 }
 
-
 int
 main (int argc, char** argv)
 {
@@ -74,6 +73,12 @@ main (int argc, char** argv)
   ros::Subscriber sub = nh.subscribe ("/bowlAverage", 1, point_cb);
 
   pub = nh.advertise<geometry_msgs::PointStamped> ("bowlPos", 1);
+
+  // ros::NodeHandle n;
+  // ros::ServiceClient client = n.serviceClient<beginner_tutorials::AddTwoInts>("reset_bowl");
+  // beginner_tutorials::AddTwoInts srv;
+  // srv.request.a = atoll(argv[1]);
+  // srv.request.b = atoll(argv[2]);
 
   // Spin
   ros::spin ();

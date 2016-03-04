@@ -334,36 +334,23 @@ class locateAndMove():
 
     # FIRST BASIC SCOOP TRIAL
     def scoop_from_side(self, x, y, z):
-        # MOVE TO SEE SWEETS WITH CAMERA
-        #self.move_to_point("right",x+0.03,y,z+0.05)
-        # MOVE TO START SCOOP POSITION
-
         self.print_arm_pose()
 
         self._right_grip.close()
-
 
         self.move_and_rotate("right", x, y-0.1, z+0.02, self.right_pose[3], -0.8, 1.3)
 
         self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.03, self.right_pose[2]-0.02,
         self.right_pose[3],self.right_pose[4],self.right_pose[5])
         #
-        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.07, self.right_pose[2]-0.03,
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.05, self.right_pose[2]-0.03,
         self.right_pose[3],self.right_pose[4]-0.15,self.right_pose[5])
 
-        self._right_grip.open()
+        self._right_grip.calibrate()
 
         self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]+0.02, self.right_pose[2],
-        self.right_pose[3],self.right_pose[4]-0.15,self.right_pose[5])
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
 
-
-        # self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.09,
-        # self.right_pose[3],self.right_pose[4],self.right_pose[5])
-        #
-        # self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.3, self.right_pose[2]+0.09,
-        # self.right_pose[3],self.right_pose[4],self.right_pose[5])
-        #
-        # self._right_grip.open()
 
     def grab_bowl_and_tilt(self, x, y, z):
 
@@ -399,6 +386,119 @@ class locateAndMove():
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.35,
         self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+    def tilt_shake_grab(self, x, y, z):
+
+        self._left_grip.calibrate()
+        self._right_grip.calibrate()
+        #self._left_grip.open()
+        self.move_and_rotate("left", x, y+0.069, z+0.05, self.left_pose[3], self.left_pose[4], self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2],
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.19,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self._left_grip.close()
+
+        self.left_interface.set_joint_position_speed(0.5)
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.05,
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        for i in range(0,5):
+            # self._pub_rate.publish(500)
+            #
+            # move = {'left_w0': 5, 'left_w1': 5, 'left_w2': 5, 'left_e0': 5, 'left_e1': 5, 'left_s0': 5, 'left_s1': 5}
+            # move2 = {'left_w0': -1, 'left_w1': -1, 'left_w2': -1, 'left_e0': -1, 'left_e1': -1, 'left_s0': -1, 'left_s1': -1}
+            # move3 = {'left_w0': 0, 'left_w1': 0, 'left_w2': 0, 'left_e0': 0, 'left_e1':  0, 'left_s0': 0, 'left_s1': 0}
+            #
+            # self.left_interface.set_joint_velocities(move)
+            # self.left_interface.set_joint_velocities(move)
+            # self.left_interface.set_joint_velocities(move)
+            # self.left_interface.set_joint_velocities(move)
+            # self.left_interface.set_joint_velocities(move3)
+            # self.left_interface.set_joint_velocities(move2)
+            # self.left_interface.set_joint_velocities(move3)
+
+            self.move_and_rotate("left", self.left_pose[0]-0.04, self.left_pose[1], self.left_pose[2]+0.03,
+            self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+            self.move_and_rotate("left", self.left_pose[0]+0.04, self.left_pose[1], self.left_pose[2]-0.03,
+            self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+            move.scoop_from_side(self.left_pose[0], self.left_pose[1], self.left_pose[2])
+
+            self._right_grip.close()
+            self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.2,
+            self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+            self.moveSweetToArea()
+
+    def bowl_tip_trial(self, x, y, z):
+
+        self._left_grip.calibrate()
+        self._right_grip.calibrate()
+        #self._left_grip.open()
+        self.move_and_rotate("left", x, y+0.069, z+0.05, self.left_pose[3], self.left_pose[4], self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2],
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.19,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self._left_grip.close()
+
+        self.left_interface.set_joint_position_speed(0.2)
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.04,
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+
+        self.left_interface.set_joint_position_speed(0.1)
+
+        self.move_and_rotate("left", 0.52, -0.17, self.left_pose[2]+0.04,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self.left_interface.set_joint_position_speed(0.5)
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
+        self.left_pose[3]-0.45,self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
+        self.left_pose[3]+0.6,self.left_pose[4],self.left_pose[5])
+
+        self.left_interface.set_joint_position_speed(0.1)
+
+        self.move_and_rotate("left", 0.58, self.left_pose[1]+0.26, self.left_pose[2],
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self._left_grip.open()
+
+        # for i in range(0,5):
+        #
+        #     self.right_interface.set_joint_position_speed(0.4)
+        #
+        #     self._right_grip.close()
+        #
+        #     self.move_and_rotate("right", self.left_pose[0], self.left_pose[1]+0.1, self.left_pose[1]-0.05,
+        #     self.right_pose[3],self.right_pose[4],self.right_pose[5])
+        #
+        #     self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.03, -0.20,
+        #     self.right_pose[3],self.right_pose[4],self.right_pose[5])
+        #
+        #     self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.06, -0.195,
+        #     self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+            # move.scoop_from_side(self.left_pose[0], self.left_pose[1], self.left_pose[2])
+            #
+            # self._right_grip.close()
+            # self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.2,
+            # self.right_pose[3],self.right_pose[4],self.right_pose[5])
+            #
+            # self.moveSweetToArea()
+
 
     def moveSweetToArea(self):
         self.move_and_rotate("right", 0.5, -0.25, -0.1, self.right_pose[3]
@@ -449,6 +549,10 @@ class locateAndMove():
         self.move_and_rotate("right", 0.75, -0.25, 0, self.right_pose[3]
             , self.right_pose[4], self.right_pose[5])
 
+def reset_bowl(req):
+    print "request has string "+req.A
+    print totalSweets
+    return RequestSweetInfoResponse(totalSweets, centrelist)
 
 
 if __name__ == '__main__':
@@ -457,42 +561,32 @@ if __name__ == '__main__':
     [x, y, z] = move.get_pos_client()
     print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
 
-    move.grab_sweets_from_above(x, y, z)
-    # rospy.sleep(5.0)
-    # [x, y, z] = move.get_pos_client()
-    # print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
-    #
-    # move.shake_in_bowl(x, y, z)
-    #
-    # rospy.sleep(5.0)
-    # [x, y, z] = move.get_pos_client()
-    # print "Found from client : " + str(x) + ", " + str(y) + ", " + str(z)
-    # move.grab_bowl_and_tilt(x, y, z)
+    # move.grab_sweets_from_above(x, y, z)
+    # move.tilt_shake_grab(x, y, z)
 
-    #rospy.sleep(5.0)
+    move.bowl_tip_trial(x, y, z)
 
-    #[x, y, z] = move.get_pos_client()
-    #move.scoop_from_side(x, y, z)
+    move.moveToSweets()
 
-    # move.print_arm_pose()
+    # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
+    num, centres = move.get_sweet_client()
 
-    # GRAB ALL SWEETS FROM AREA - MOVE ABOVE, LOOK, GET CENTRES THEN GRAB!!!
+    specifiedNumber = 3
+    if num < specifiedNumber:
+        move.resetBowl()
+        rospy.sleep(2)
+        move.bowl_tip_trial(x, y, z)
 
-    # move._right_grip.calibrate()
-    # move.moveToSweets()
-    #
-    # # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
-    # num, centres = move.get_sweet_client()
-    # print(len(centres))
-    # print((len(centres)+1)/3 - 1)
-    #
-    # points = []
-    # for i in range(0, ((len(centres)+1)/3)):
-    #     print((i*3)+2)
-    #     points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
-    #
-    # for i in range(0, len(points)):
-    #     currpoint = points[i]
-    #     move.move_and_pick_up_sweet(currpoint[0], currpoint[1], currpoint[2])
-    #
-    # move.moveToSweets()
+    print(len(centres))
+    print((len(centres)+1)/3 - 1)
+
+    points = []
+    for i in range(0, ((len(centres)+1)/3)):
+        print((i*3)+2)
+        points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+
+    for i in range(0, len(points)):
+        currpoint = points[i]
+        move.move_and_pick_up_sweet(currpoint[0], currpoint[1], currpoint[2])
+
+    move.moveToSweets()
