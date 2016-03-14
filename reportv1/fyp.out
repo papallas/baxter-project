@@ -1,0 +1,35 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.1.1}{Aim}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{Objectives}{chapter.1}% 3
+\BOOKMARK [1][-]{section.1.3}{Methodology}{chapter.1}% 4
+\BOOKMARK [1][-]{section.1.4}{Tasks, milestones and timeline}{chapter.1}% 5
+\BOOKMARK [0][-]{chapter.2}{Background And Literature Review}{}% 6
+\BOOKMARK [1][-]{section.2.1}{Machine Vision}{chapter.2}% 7
+\BOOKMARK [1][-]{section.2.2}{Robotic Behaviour}{chapter.2}% 8
+\BOOKMARK [1][-]{section.2.3}{Human Interaction}{chapter.2}% 9
+\BOOKMARK [0][-]{chapter.3}{Materials and Logic}{}% 10
+\BOOKMARK [1][-]{section.3.1}{The Robot}{chapter.3}% 11
+\BOOKMARK [1][-]{section.3.2}{Kinect}{chapter.3}% 12
+\BOOKMARK [1][-]{section.3.3}{System Logic}{chapter.3}% 13
+\BOOKMARK [0][-]{chapter.4}{Methods}{}% 14
+\BOOKMARK [1][-]{section.4.1}{Main ROS Principles}{chapter.4}% 15
+\BOOKMARK [2][-]{subsection.4.1.1}{Inverse Kinematics}{section.4.1}% 16
+\BOOKMARK [2][-]{subsection.4.1.2}{Visualisation using RViz}{section.4.1}% 17
+\BOOKMARK [2][-]{subsection.4.1.3}{Fixed Frame Transforms}{section.4.1}% 18
+\BOOKMARK [2][-]{subsection.4.1.4}{Custom Service Requests}{section.4.1}% 19
+\BOOKMARK [1][-]{section.4.2}{The Vision System}{chapter.4}% 20
+\BOOKMARK [2][-]{subsection.4.2.1}{Calibration and Setup}{section.4.2}% 21
+\BOOKMARK [2][-]{subsection.4.2.2}{Basic Vision Techniques}{section.4.2}% 22
+\BOOKMARK [2][-]{subsection.4.2.3}{Bowl Recognition}{section.4.2}% 23
+\BOOKMARK [2][-]{subsection.4.2.4}{Sweet Recognition}{section.4.2}% 24
+\BOOKMARK [2][-]{subsection.4.2.5}{Sweet Singulation}{section.4.2}% 25
+\BOOKMARK [1][-]{section.4.3}{The Manipulation System}{chapter.4}% 26
+\BOOKMARK [2][-]{subsection.4.3.1}{Manipulating the Bowl}{section.4.3}% 27
+\BOOKMARK [2][-]{subsection.4.3.2}{Sweet Manipulation}{section.4.3}% 28
+\BOOKMARK [1][-]{section.4.4}{Human Interaction}{chapter.4}% 29
+\BOOKMARK [2][-]{subsection.4.4.1}{Voice Recognition}{section.4.4}% 30
+\BOOKMARK [2][-]{subsection.4.4.2}{Hand Recognition}{section.4.4}% 31
+\BOOKMARK [0][-]{subsection.4.4.2}{References}{}% 32
+\BOOKMARK [0][-]{section*.4}{Appendices}{}% 33
+\BOOKMARK [0][-]{Appendix.1.A}{External Material}{}% 34
+\BOOKMARK [0][-]{Appendix.1.B}{Ethical Issues Addressed}{}% 35
