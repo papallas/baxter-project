@@ -1,0 +1,74 @@
+\chapter{Materials and Logic}
+\label{chapter3}
+\section{The Robot}
+\section{Kinect}
+\section{System Logic}
+To simplify the overall system logic, it was easier to look at the system as a whole and look at the simple interactions needed between a shopkeeper and their customer. Firstly, human interaction would determine what sweets the shopkeeper would need to get. Secondly, the shopkeeper would get some sweets from the bowl and individually pick out the ones the customer wanted. The shopkeeper would give those sweets to the customer and then ask for payment of some sort to complete the interaction. During the development of the project, more clear and precise logic steps came from development, shown in the flow chart below.
+\newline
+% Define block styles
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=10em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=10em, text centered, rounded corners, minimum height=2em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    maximum height=2em]
+    
+\begin{tikzpicture}[node distance = 2cm, auto]
+    % Place nodes
+    \node [block] (init) {Baxter sees customer and listens for command};
+    \node [block, right of=init] (hearddecision) [xshift=4.0cm] {Is command received and understood?};
+    \node [block, right of=hearddecision] (bowllook) [xshift=4.0cm] {Look for sweet bowl};
+    \node [block, below of=bowllook] (bowlgrab) [yshift=-1.0cm]{Tilt sweets from bowl onto table};
+    \node [block, below of=hearddecision] (sweetlook) [yshift=-1.0cm]{Look at the sweets on the table};
+    \node [block, below of=init] (sweetdecision) [yshift=-1.0cm]{Are there enough sweets on the table for the customer?};
+    \node [block, below of=init] (sweetdecision) [yshift=-1.0cm]{Are there enough sweets on the table for the customer?};
+    \node [block, below of=sweetdecision] (grabsweet) [yshift=-1.0cm]{Grab a correct sweet and hold out to give to customer};
+    \node [block, below of=sweetlook] (handdecision) [yshift=-1.0cm]{Is the customer holding their hand out to receive the sweet?};
+    \node [block, below of=bowlgrab] (givesweet) [yshift=-1.0cm]{Give customer sweet};
+    \node [block, below of=givesweet] (alldonedecision) [yshift=-1.0cm]{Has the customer received all the sweets they wanted?};
+    \node [block, below of=handdecision] (complete) [yshift=-1.0cm]{Transaction Complete};
+
+
+
+    
+
+
+
+%    \node [block, rjght of=sweetlook] (sweetdecision) [yshift=-1.5cm] {Are there enough sweets on the table for the customer?};
+%        \node [block, right of=sweetdecision] (separated) [xshift=10.0cm]{Are the sweets separated on the table enough to grab properly?};
+%
+
+%
+%    
+%    \node [block, below of=init] (identify) {identify candidate models};
+%    \node [block, below of=identify] (evaluate) {evaluate candidate models};
+%    \node [block, left of=evaluate, node distance=3cm] (update) {update model};
+%    \node [decision, below of=evaluate] (decide) {is best candidate better?};
+%    \node [block, below of=decide, node distance=3cm] (stop) {stop};
+    % Draw edges
+     \path [line] (init) -- (hearddecision);
+     \path [line] (hearddecision) -- node[anchor=north] {no}(init);
+     \path [line] (hearddecision) -- node {yes}(bowllook);
+     \path [line] (bowllook) -- node {Using Bowl Position}(bowlgrab);
+     \path [line] (bowlgrab) -- (sweetlook);
+     \path [line] (sweetlook) -- (sweetdecision);
+     \path [line] (sweetdecision) -- node{no}(bowllook);
+     \path [line] (sweetdecision) -- node{yes}(grabsweet);
+     \path [line] (grabsweet) -- (handdecision);
+     \path [line] (handdecision) -- node{yes}(givesweet);
+     \path [line] (givesweet) -- (alldonedecision);
+     \path [line] (alldonedecision) -- node{no}(grabsweet);
+     \path [line] (alldonedecision) -- node{yes}(complete);
+
+
+
+
+
+%
+%    \path [line] (identify) -- (evaluate);
+%    \path [line] (evaluate) -- (decide);
+%    \path [line] (decide) -| node [near start] {yes} (update);
+%    \path [line] (update) |- (identify);
+%    \path [line] (decide) -- node {no}(stop);
+\end{tikzpicture}

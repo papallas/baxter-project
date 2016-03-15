@@ -1,0 +1,35 @@
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}Aim}{1}{section.1.1}
+\contentsline {section}{\numberline {1.2}Objectives}{1}{section.1.2}
+\contentsline {section}{\numberline {1.3}Methodology}{2}{section.1.3}
+\contentsline {section}{\numberline {1.4}Tasks, milestones and timeline}{2}{section.1.4}
+\contentsline {chapter}{\numberline {2}Background And Literature Review}{5}{chapter.2}
+\contentsline {section}{\numberline {2.1}Machine Vision}{5}{section.2.1}
+\contentsline {section}{\numberline {2.2}Robotic Behaviour}{5}{section.2.2}
+\contentsline {section}{\numberline {2.3}Human Interaction}{5}{section.2.3}
+\contentsline {chapter}{\numberline {3}Materials and Logic}{7}{chapter.3}
+\contentsline {section}{\numberline {3.1}The Robot}{7}{section.3.1}
+\contentsline {section}{\numberline {3.2}Kinect}{7}{section.3.2}
+\contentsline {section}{\numberline {3.3}System Logic}{7}{section.3.3}
+\contentsline {chapter}{\numberline {4}Methods}{9}{chapter.4}
+\contentsline {section}{\numberline {4.1}Main ROS Principles}{9}{section.4.1}
+\contentsline {subsection}{\numberline {4.1.1}Inverse Kinematics}{9}{subsection.4.1.1}
+\contentsline {subsection}{\numberline {4.1.2}Visualisation using RViz}{9}{subsection.4.1.2}
+\contentsline {subsection}{\numberline {4.1.3}Fixed Frame Transforms}{9}{subsection.4.1.3}
+\contentsline {subsection}{\numberline {4.1.4}Custom Service Requests}{10}{subsection.4.1.4}
+\contentsline {section}{\numberline {4.2}The Vision System}{10}{section.4.2}
+\contentsline {subsection}{\numberline {4.2.1}Calibration and Setup}{10}{subsection.4.2.1}
+\contentsline {subsection}{\numberline {4.2.2}Basic Vision Techniques}{10}{subsection.4.2.2}
+\contentsline {subsection}{\numberline {4.2.3}Bowl Recognition}{10}{subsection.4.2.3}
+\contentsline {subsection}{\numberline {4.2.4}Sweet Recognition}{13}{subsection.4.2.4}
+\contentsline {subsection}{\numberline {4.2.5}Sweet Singulation}{17}{subsection.4.2.5}
+\contentsline {section}{\numberline {4.3}The Manipulation System}{17}{section.4.3}
+\contentsline {subsection}{\numberline {4.3.1}Manipulating the Bowl}{17}{subsection.4.3.1}
+\contentsline {subsection}{\numberline {4.3.2}Sweet Manipulation}{17}{subsection.4.3.2}
+\contentsline {section}{\numberline {4.4}Human Interaction}{17}{section.4.4}
+\contentsline {subsection}{\numberline {4.4.1}Voice Recognition}{17}{subsection.4.4.1}
+\contentsline {subsection}{\numberline {4.4.2}Hand Recognition}{17}{subsection.4.4.2}
+\contentsline {chapter}{References}{18}{subsection.4.4.2}
+\contentsline {chapter}{Appendices}{21}{section*.4}
+\contentsline {chapter}{\numberline {A}External Material}{23}{Appendix.1.A}
+\contentsline {chapter}{\numberline {B}Ethical Issues Addressed}{25}{Appendix.1.B}
