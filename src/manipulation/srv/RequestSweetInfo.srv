@@ -2,3 +2,6 @@ string A
 ---
 int8 n
 float64[] pos
+string collisions
+int8 collisionNum
+float64[] collisionPos

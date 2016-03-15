@@ -86,6 +86,14 @@ std::vector <pcl::PointIndices> getColourClusters(pcl::PointCloud<pcl::PointXYZR
 
     std::vector <pcl::PointIndices> clusters;
     reg.extract (clusters);
+    // SHOW POINTCLOUD OF SEGMENTED REGIONS
+    /*pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud ();
+    pcl::visualization::CloudViewer viewer ("Cluster viewer");
+    viewer.showCloud (colored_cloud);
+    while (!viewer.wasStopped ())
+    {
+      boost::this_thread::sleep (boost::posix_time::microseconds (100));
+    }*/
     return clusters;
 }
 
@@ -139,9 +147,9 @@ pcl_msgs::ModelCoefficients getBowlInCloud(pcl::PointCloud<pcl::PointXYZRGB> whi
    seg.setMethodType (pcl::SAC_RANSAC);
    seg.setMaxIterations(1000);
    // Max distance of 1 cm between points
-   seg.setDistanceThreshold (0.15);
+   seg.setDistanceThreshold (0.0);
    // Set limit on size of bowl - not search too big or too small circles
-   seg.setRadiusLimits(0.05,0.10);
+   seg.setRadiusLimits(0.05,0.07);
 
    // Set the PCL cloud as the input and segment into the inliers/coefficients
    seg.setInputCloud (whiteCloud.makeShared());

@@ -26,10 +26,12 @@ from baxter_core_msgs.srv import (
     SolvePositionIKRequest,
 )
 from manipulation.srv import *
+from manipulation.msg import *
 
 import baxter_interface
 
 from baxter_interface import CHECK_VERSION
+from baxter_core_msgs.msg import EndEffectorState
 
 import tf
 
@@ -42,6 +44,8 @@ from std_msgs.msg import UInt16
 # update pose in x and y direction
 # initialise ros node
 rospy.init_node("pick_up_sweets", anonymous = True)
+
+global gripped
 
 class locateAndMove():
 
@@ -81,6 +85,10 @@ class locateAndMove():
         #self._right_grip.calibrate()
         # self._left_grip_state   = 'open'
         self._right_grip_state  = 'open'
+
+        self._left_grip.calibrate()
+        self._right_grip.calibrate()
+
         # control parameters
         self._pub_rate          = rospy.Publisher('robot/joint_state_publish_rate',
                                          UInt16, queue_size=10)
@@ -180,7 +188,6 @@ class locateAndMove():
 
 
     def baxter_ik_move(self, limb, rpy_pose):
-        print str(rpy_pose[2])
         if (rpy_pose[2] <  self.MINZ):
             rpy_pose[2] =  self.MINZ
         quaternion_pose = self.list_to_pose_stamped(rpy_pose, "base")
@@ -199,7 +206,7 @@ class locateAndMove():
             sys.exit("ERROR - baxter_ik_move - Failed to append pose")
 
         if ik_response.isValid[0]:
-            print("PASS: Valid joint configuration found")
+            # print("PASS: Valid joint configuration found")
             # convert response to joint position control dictionary
             limb_joints = dict(zip(ik_response.joints[0].name, ik_response.joints[0].position))
             # move limb
@@ -436,12 +443,8 @@ class locateAndMove():
 
             self.moveSweetToArea()
 
-    def bowl_tip_trial(self, x, y, z):
-
-        self._left_grip.calibrate()
-        self._right_grip.calibrate()
-        #self._left_grip.open()
-        self.move_and_rotate("left", x, y+0.069, z+0.05, self.left_pose[3], self.left_pose[4], self.left_pose[5])
+    def move_to_grab_bowl(self, x, y, z):
+        self.move_and_rotate("left", x, y+0.068, -0.15, self.left_pose[3], self.left_pose[4], self.left_pose[5])
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2],
         self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
@@ -449,16 +452,18 @@ class locateAndMove():
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.19,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
+    def bowl_tip_trial(self, x, y, z):
         self._left_grip.close()
 
         self.left_interface.set_joint_position_speed(0.2)
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.04,
-        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.1)
 
-        self.move_and_rotate("left", 0.52, -0.17, self.left_pose[2]+0.04,
+        # -0.17
+        self.move_and_rotate("left", 0.59, -0.25, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.5)
@@ -467,61 +472,33 @@ class locateAndMove():
         self.left_pose[3]-0.45,self.left_pose[4],self.left_pose[5])
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
-        self.left_pose[3]+0.6,self.left_pose[4],self.left_pose[5])
+        self.left_pose[3]+0.45,self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", 0.59, -0.15, self.left_pose[2],
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
+        self.left_pose[3]-0.45,self.left_pose[4],self.left_pose[5])
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
+        self.left_pose[3]+0.45,self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.1)
 
-        self.move_and_rotate("left", 0.58, self.left_pose[1]+0.26, self.left_pose[2],
+        self.move_and_rotate("left", 0.59, self.left_pose[1]+0.24, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
-        self._left_grip.open()
-
-        # for i in range(0,5):
-        #
-        #     self.right_interface.set_joint_position_speed(0.4)
-        #
-        #     self._right_grip.close()
-        #
-        #     self.move_and_rotate("right", self.left_pose[0], self.left_pose[1]+0.1, self.left_pose[1]-0.05,
-        #     self.right_pose[3],self.right_pose[4],self.right_pose[5])
-        #
-        #     self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.03, -0.20,
-        #     self.right_pose[3],self.right_pose[4],self.right_pose[5])
-        #
-        #     self.move_and_rotate("right", self.right_pose[0], self.right_pose[1]-0.06, -0.195,
-        #     self.right_pose[3],self.right_pose[4],self.right_pose[5])
-
-            # move.scoop_from_side(self.left_pose[0], self.left_pose[1], self.left_pose[2])
-            #
-            # self._right_grip.close()
-            # self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], self.right_pose[2]+0.2,
-            # self.right_pose[3],self.right_pose[4],self.right_pose[5])
-            #
-            # self.moveSweetToArea()
-
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.15,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
     def moveSweetToArea(self):
         self.move_and_rotate("right", 0.5, -0.25, -0.1, self.right_pose[3]
             , self.right_pose[4], self.right_pose[5])
         self._right_grip.open()
 
-
-
     def moveToSweets(self):
-
         self.move_and_rotate("right", 0.75, -0.25, 0.15, self.right_pose[3]
             , self.right_pose[4], self.right_pose[5])
-
-    def get_sweet_client(self):
-        print "\nRequesting sweet number on table"
-        rospy.wait_for_service('publish_sweet_info')
-        print "service found"
-        try:
-            sweet_number_req = rospy.ServiceProxy('publish_sweet_info', RequestSweetInfo)
-            resp = sweet_number_req("")
-            return resp.n, resp.pos
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
 
     def move_and_pick_up_sweet(self, x, y, z):
         self.right_interface.set_joint_position_speed(0.3)
@@ -539,54 +516,181 @@ class locateAndMove():
         self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], -0.1,
         self.right_pose[3],self.right_pose[4],self.right_pose[5])
 
+        global gripped
+
+        print "Sweet gripped? ",gripped
+        if gripped == True:
+            self.right_interface.set_joint_position_speed(0.3)
+
+            self.move_and_rotate("right", 0.8, -0.25, 0,
+            self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+            self._right_grip.open()
+
+        if gripped == False:
+            self._right_grip.open()
+
+        # self.move_and_rotate("right", 0.75, -0.25, 0, self.right_pose[3]
+        #     , self.right_pose[4], self.right_pose[5])
+
+    def separate_collision(self, direction, x, y, z):
         self.right_interface.set_joint_position_speed(0.3)
 
-        self.move_and_rotate("right", 0.8, -0.25, 0,
+        self._right_grip.close()
+
+        self.move_and_rotate("right", x, y-0.1, 0,
         self.right_pose[3],self.right_pose[4],self.right_pose[5])
 
-        self._right_grip.open()
 
-        self.move_and_rotate("right", 0.75, -0.25, 0, self.right_pose[3]
-            , self.right_pose[4], self.right_pose[5])
+        if direction == 1:
+            self.move_and_rotate("right", x+0.05, y, -0.205,
+            self.right_pose[3],self.right_pose[4],self.right_pose[5])
 
-def reset_bowl(req):
-    print "request has string "+req.A
-    print totalSweets
-    return RequestSweetInfoResponse(totalSweets, centrelist)
+            self.move_and_rotate("right", x-0.05, y-0.03, -0.205,
+            self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        if direction == 0:
+            self.move_and_rotate("right", x-0.05, y, -0.205,
+            self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+            self.move_and_rotate("right", x+0.05, y, -0.205,
+            self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], -0.1,
+        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+
+        self.right_interface.set_joint_position_speed(0.1)
+
+
+    def reset_bowl(self):
+        print "Detecting Bowl.."
+        rospy.wait_for_service('reset_bowl')
+        try:
+            reset_bowl_req = rospy.ServiceProxy('reset_bowl', LookForBowl)
+            resp = reset_bowl_req("Reset")
+            return resp.ok
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+    def reset_sweets(self):
+        print "\nLooking at sweets on table"
+        rospy.wait_for_service('reset_sweets')
+        try:
+            reset_sweets_req = rospy.ServiceProxy('reset_sweets', LookForSweets)
+            resp = reset_sweets_req("Reset")
+            return resp.ok
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+    def get_sweet_client(self):
+        print "Requesting sweet number on table"
+        rospy.wait_for_service('publish_sweet_info')
+        try:
+            sweet_number_req = rospy.ServiceProxy('publish_sweet_info', RequestSweetInfo)
+            resp = sweet_number_req("")
+            return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos
+
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+def gripperholding(state):
+    if state.force > 1:
+        global gripped
+        gripped = True
+    if state.force <= 1:
+        global gripped
+        gripped = False
 
 
 if __name__ == '__main__':
+    rospy.Subscriber("/robot/end_effector/right_gripper/state", EndEffectorState, gripperholding)
+
+
     "Setting up Baxter movement"
     move = locateAndMove()
-    [x, y, z] = move.get_pos_client()
-    print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
 
-    # move.grab_sweets_from_above(x, y, z)
-    # move.tilt_shake_grab(x, y, z)
+    sweetRequest = 5
+    num = 0
 
-    move.bowl_tip_trial(x, y, z)
+    # ok = move.reset_bowl()
+    # rospy.sleep(6)
+    #
+    # [x, y, z] = move.get_pos_client()
+    # print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
 
-    move.moveToSweets()
+    # move.move_to_grab_bowl(x, y, z)
 
-    # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
-    num, centres = move.get_sweet_client()
+    while (num < sweetRequest):
+        # move.bowl_tip_trial(x, y, z)
+        move._right_grip.open()
+        move.moveToSweets()
+        string = move.reset_sweets()
 
-    specifiedNumber = 3
-    if num < specifiedNumber:
-        move.resetBowl()
-        rospy.sleep(2)
-        move.bowl_tip_trial(x, y, z)
+        # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
+        num, centres, collisions, collisionNum, collisionPos = move.get_sweet_client()
 
-    print(len(centres))
-    print((len(centres)+1)/3 - 1)
+        if (num == 0):
+            print "No sweets found on the table"
+        if (num == 1):
+            print str(num), "sweet found on the table"
+        if (num > 1):
+            print str(num), "sweets found on the table"
+        if (collisionNum != 0):
+            print str(collisionNum),"collisions of sweets"
 
-    points = []
-    for i in range(0, ((len(centres)+1)/3)):
-        print((i*3)+2)
-        points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+        if num >= sweetRequest:
+            print "Total number of sweets is greater than request"
+            break
 
-    for i in range(0, len(points)):
-        currpoint = points[i]
-        move.move_and_pick_up_sweet(currpoint[0], currpoint[1], currpoint[2])
+        if num < sweetRequest:
+            while collisions == "True":
+                points = []
+                for i in range(0, ((len(collisionPos)+1)/3)):
+                    points.append((collisionPos[(i*3)+0], collisionPos[(i*3)+1], collisionPos[(i*3)+2]))
 
-    move.moveToSweets()
+                for i in range(0, collisionNum):
+                    currpoint = points[i]
+                    move.separate_collision(1, currpoint[0], currpoint[1], currpoint[2])
+
+                move.moveToSweets()
+                string = move.reset_sweets()
+                rospy.sleep(5)
+
+                # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
+                num, centres, collisions, collisionNum, collisionPos = move.get_sweet_client()
+
+        move._right_grip.open()
+
+        if (num == 0):
+            print "No sweets found on the table"
+        if (num == 1):
+            print str(num), "sweet found on the table"
+        if (num > 1):
+            print str(num), "sweets found on the table"
+        if (collisionNum != 0):
+            print str(collisionNum),"collisions of sweets"
+
+    numGiven = 0
+    while sweetRequest > 0:
+        points = []
+        print (len(centres)+1)/3
+        for i in range(0, ((len(centres)+1)/3)):
+            points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+
+        for i in range(0, sweetRequest):
+            currpoint = points[i]
+            move.move_and_pick_up_sweet(currpoint[0], currpoint[1], currpoint[2])
+
+        move.moveToSweets()
+        string = move.reset_sweets()
+        rospy.sleep(5)
+
+        # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
+        newNum, centres, collisions, collisionNum, collisionPos = move.get_sweet_client()
+        numGiven = num - newNum
+        num = newNum
+
+        print str(numGiven)," sweets have been given to the customer"
+        sweetRequest = sweetRequest - numGiven
+        print "Need to give them ",str(sweetRequest),"more"
+    print"Success! Customer has all their sweets!"

@@ -2,14 +2,18 @@
 #include <geometry_msgs/PointStamped.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
+#include <manipulation/LookForBowl.h>
+
+#include <string>
+#include "std_msgs/String.h"
 
 ros::Publisher pub;
 
 int counter = 0;
 
 std::vector<float> xVals(20,0.0);
-std::vector<float> yVals(20,0.0);;
-std::vector<float> zVals(20,0.0);;
+std::vector<float> yVals(20,0.0);
+std::vector<float> zVals(20,0.0);
 
 // Create a callback method on the receipt of a PointCloud2 object
 void
@@ -62,6 +66,17 @@ point_cb (const geometry_msgs::PointStamped point_msg)
   }
 }
 
+bool add(manipulation::LookForBowl::Request &req,
+         manipulation::LookForBowl::Response &res)
+{
+  res.ok = "OK";
+  counter = 0;
+  std::fill(xVals.begin(), xVals.end(), 0);
+  std::fill(yVals.begin(), yVals.end(), 0);
+  std::fill(zVals.begin(), zVals.end(), 0);
+  return true;
+}
+
 int
 main (int argc, char** argv)
 {
@@ -74,11 +89,7 @@ main (int argc, char** argv)
 
   pub = nh.advertise<geometry_msgs::PointStamped> ("bowlPos", 1);
 
-  // ros::NodeHandle n;
-  // ros::ServiceClient client = n.serviceClient<beginner_tutorials::AddTwoInts>("reset_bowl");
-  // beginner_tutorials::AddTwoInts srv;
-  // srv.request.a = atoll(argv[1]);
-  // srv.request.b = atoll(argv[2]);
+  ros::ServiceServer service = nh.advertiseService("reset_bowl", add);
 
   // Spin
   ros::spin ();
