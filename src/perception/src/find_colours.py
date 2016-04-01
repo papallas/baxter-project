@@ -20,7 +20,7 @@ from geometry_msgs.msg import Point
 
 from manipulation.srv import *
 from manipulation.srv import LookForSweets
-
+from collections import OrderedDict
 
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -39,6 +39,9 @@ backgroundImage = 0
 
 global totalSweets
 global centrelist
+
+# RED, GREEN, BLUE
+global colourAmounts
 
 global sweetarea
 global foundsquare
@@ -66,7 +69,36 @@ def callback(message):
     # Take each frame
     simg = cv2.GaussianBlur(cv_image,(5,5),0)
 
+    # initialize the colors dictionary, containing the color
+    # name as the key and the RGB tuple as the value
+    colors = OrderedDict({
+    	"green": (130.68058107082402, 126.18073194402548, 91.24113616607778),
+    	"blue": (167.21600854233967, 113.0324141733287, 81.47253859404914),
+        "red": (121.55769231718531, 102.44336928332095, 116.87984092454667)})
+
+    # allocate memory for the L*a*b* image, then initialize
+    # the color names list
+    lab = np.zeros((len(colors), 1, 3), dtype="uint8")
+    colorNames = []
+
+    # loop over the colors dictionary
+    for (i, (name, rgb)) in enumerate(colors.items()):
+    	# update the L*a*b* array and the color names list
+    	lab[i] = rgb
+    	colorNames.append(name)
+
+    # convert the L*a*b* array from the RGB color space
+    # to L*a*b*
+    # lab = cv2.cvtColor(lab, cv2.COLOR_RGB2LAB)
+
+    # lab = []
+    # lab.append([[0, 128, 128]])
+    # lab.append([[0, -128, 128]])
+    # lab.append([[0, 128, -128]])
+
     if enableAnalyse == True:
+        # print lab
+
         # find sweet rectangular area for sweets
         global sweetarea
         global foundsquare
@@ -74,28 +106,128 @@ def callback(message):
         sweetarea, areafound = find_background(simg)
         print "Finding sweet area"
 
+        #with open('colours.data', 'a') as file:
+
         if foundsquare == True:
             # Convert BGR to HS
-            hsv = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2HSV)
-
             circleimg = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2GRAY);
 
-            # bluemask, bluecnts, bluenum, centres, collisionConts, collisionNum, collisionCentres, angles = \
-            #                 find_sweets(hsv, "blue",48, 90, 37, 255, 255, 255, 100, 6)
+            cvimagelab = cv2.cvtColor(cv_image, cv2.COLOR_BGR2LAB);
 
-            bluemask, bluecnts, bluenum, centres, angles = \
-                            find_sweets(hsv, "blue",48, 90, 37, 255, 255, 255, 100, 6)
+            edges = cv2.Canny(circleimg,50,200,apertureSize = 3)
 
-            # 1,66,54,0,106,182,113,1
-            # greenmask, greencnts, greennum, centres1 = find_sweets(hsv, "green", 66, 54, 0, 106, 182, 113, 50, 6)
-            # 1,142,0,70,200,160,255,7
-            # pinkmask, pinkcnts, pinknum, centres2 = find_sweets(hsv, "pink", 110, 0, 49, 193, 149, 177, 200, 8)
+            kernel = np.ones((5,5),np.uint8)
+            dilation = cv2.dilate(edges,kernel,iterations = 1)
 
-            cv2.drawContours(cv_image, bluecnts, -1, (255,0,0), 3)
-            #cv2.drawContours(cv_image, greencnts, -1, (0,255,0), 3)
-            #cv2.drawContours(cv_image, pinkcnts, -1, (255,204,255), 3)
+            contours,hier = cv2.findContours(dilation,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+            #cv2.drawContours(cv_image, contours, -1, (255,0,0), 3)
+
+            mask = np.zeros(circleimg.shape,dtype="uint8")
+            centrepoints = []
+            for cont in contours:
+                area = cv2.contourArea(cont)
+                # cut out large border of page contours
+                if area < 50000:
+                    cv2.drawContours(mask, [cont], -1, 255, -1)
+
+                    # cv2.drawContours(mask, [cont], -1, (255,255,255), 3)
+
+            newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+            # cv2.drawContours(cv_image, newcontours, -1, (255,0,0), 3)
+
+            global colourAmounts
+            colourAmounts = [0,0,0]
+
+            redcentres = []
+            greencentres = []
+            bluecentres = []
+            redangles = []
+            greenangles = []
+            blueangles = []
+
+            greenWeights = np.array([366.1219, -463.8519, 63.0028, 8.5000])
+
+            blueWeights = np.array([-42.2808, 25.3629, 30.6613, 6.7000])
+
+            redWeights = np.array([3.4025, 11.9616, -17.8766, 6.9000])
+
+            for cont in newcontours:
+                area = cv2.contourArea(cont)
+                # cut out large border of page contours
+                # print area
+                if area < 1900:
+                    newmask = np.zeros(circleimg.shape,dtype="uint8")
+                    cv2.drawContours(newmask, [cont], -1, 255, -1)
+
+                    newmask = cv2.erode(newmask, None, iterations=1)
+                    mean = cv2.mean(cv_image, mask=newmask)[:3]
+
+                    meanarray = np.array([mean[0], mean[1], mean[2], 1])
+
+                    # string = str(mean[0])+", "+str(mean[1])+", "+str(mean[2])+", "+"pink\n"
+                    # file.write(string)
+
+                    #initialize the minimum distance found thus far
+                    minDist = (np.inf, None)
+
+                    # loop over the known L*a*b* color values
+                    for (i, row) in enumerate(lab):
+                        # compute the distance between the current L*a*b*
+                        # color value and the mean of the image
+                        # d = dist.euclidean(row[0], mean)
+                        d = np.linalg.norm(mean-row[0])
+
+                        # if the distance is smaller than the current distance,
+                        # then update the bookkeeping variable
+                        if d < minDist[0]:
+                        	minDist = (d, i)
+
+                    rows,cols = cv_image.shape[:2]
+                    [vx,vy,x,y] = cv2.fitLine(cont, cv2.cv.CV_DIST_L2,0,0.01,0.01)
+                    lefty = int((-x*vy/vx) + y)
+                    righty = int(((cols-x)*vy/vx)+y)
+                    M = cv2.moments(cont)
+                    cx = int(M['m10']/M['m00'])
+                    cy = int(M['m01']/M['m00'])
+
+                    if np.dot(redWeights,meanarray) < 0:
+                        #print "This is red"
+                        cv2.drawContours(cv_image, [cont], -1, (0,0,255), 3)
+                        colourAmounts[0] = colourAmounts[0] + 1
+                        redangles.append(math.atan2(righty - lefty, cols-1 - 0))
+                        redcentres.append((cx, cy))
+
+                    elif np.dot(greenWeights,meanarray) < 0:
+                        #print "This is green"
+                        cv2.drawContours(cv_image, [cont], -1, (0,255,0), 3)
+                        colourAmounts[1] = colourAmounts[1] + 1
+                        greenangles.append(math.atan2(righty - lefty, cols-1 - 0))
+                        greencentres.append((cx, cy))
+
+                    elif np.dot(blueWeights,meanarray) < 0:
+                        #print "This is blue"
+                        cv2.drawContours(cv_image, [cont], -1, (255,0,0), 3)
+                        colourAmounts[2] = colourAmounts[2] + 1
+                        blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
+                        bluecentres.append((cx, cy))
+
+            centres = []
+            angles = []
+
+            for i in range(0,len(redcentres)):
+                centres.append(redcentres[i])
+                angles.append(redangles[i])
+            for i in range(0,len(greencentres)):
+                centres.append(greencentres[i])
+                angles.append(greenangles[i])
+            for i in range(0,len(bluecentres)):
+                centres.append(bluecentres[i])
+                angles.append(blueangles[i])
 
             cv2.imshow("IMAGE",cv_image)
+
+            global enableAnalyse
+            enableAnalyse = False
 
             overallcentres = centres
             centrepoints = []
@@ -108,17 +240,6 @@ def callback(message):
                 point.point.y = y
                 point.point.z = 0.45
                 centrepoints.append(point)
-
-            # centreCollisionpoints = []
-            # for centre in collisionCentres:
-            #     [x, y] = pixel_to_baxter(centre[0], centre[1])
-            #     #newcoords.append((x,y))
-            #     point = PointStamped()
-            #     point.header.frame_id = "right_hand_camera"
-            #     point.point.x = x
-            #     point.point.y = y
-            #     point.point.z = 0.45
-            #     centreCollisionpoints.append(point)
 
             tl = tf.TransformListener()
 
@@ -135,52 +256,18 @@ def callback(message):
             global anglelist
             anglelist = []
 
-            for i in range(0, len(centrepoints)):
+
+            for i in range(0,len(centrepoints)):
                 newpoint = tl.transformPoint("torso", centrepoints[i])
                 pointlist.append(newpoint)
                 anglelist.append(angles[i])
-            # for i in range(0, len(centreCollisionpoints)):
-            #     newpoint = tl.transformPoint("torso", centreCollisionpoints[i])
-            #     collisionslist.append(newpoint)
 
-            hsv = 0
-            cv_image = 0
-            circleimg = 0
-
-            # pub = rospy.Publisher("sweet5", PointStamped, queue_size=10)
-            # pub.publish(pointlist[4])
-            # pub = rospy.Publisher("sweet6", PointStamped, queue_size=10)
-            # pub.publish(pointlist[5])
-            # pub = rospy.Publisher("sweet7", PointStamped, queue_size=10)
-            # pub.publish(pointlist[6])
-
-            # cv2.imshow("Sweets found", cv_image)
-            print "There are "+str(bluenum)+" sweets overall"
-            global totalSweets
-            totalSweets = bluenum
-
-            # global totalCollisions
-            # totalCollisions = collisionNum
-
-            global enableAnalyse
-            enableAnalyse = False
-
-    # global pointlist
-    # # FOR VISUALISING MULTIPLE POINTS
-    # if (len(pointlist) >= 1):
-    #     pub = rospy.Publisher("sweet1", PointStamped, queue_size=10)
-    #     pub.publish(pointlist[0])
-    # if (len(pointlist) >= 2):
-    #     pub = rospy.Publisher("sweet2", PointStamped, queue_size=10)
-    #     pub.publish(pointlist[1])
-    # if (len(pointlist) >= 3):
-    #     pub = rospy.Publisher("sweet3", PointStamped, queue_size=10)
-    #     pub.publish(pointlist[2])
-    # if (len(pointlist) >= 4):
-    #     pub = rospy.Publisher("sweet4", PointStamped, queue_size=10)
-    #     pub.publish(pointlist[3])
+            print anglelist
 
     k = cv2.waitKey(1)
+    global enableAnalyse
+    enableAnalyse = False
+
 
 
 def find_background(img):
@@ -315,8 +402,9 @@ def pixel_to_baxter(imagex, imagey):
 
 def publish_sweet_handle(req):
     print "request has string "+req.A
-    print totalSweets
     global centrelist
+    global colourAmounts
+    global pointlist
     # global collisions
     # global collisionslist
     # global totalCollisions
@@ -327,12 +415,8 @@ def publish_sweet_handle(req):
         centrelist.append(pointlist[i].point.x)
         centrelist.append(pointlist[i].point.y)
         centrelist.append(pointlist[i].point.z)
-    # for i in range(0, len(collisionslist)):
-    #     collisionCentre.append(collisionslist[i].point.x)
-    #     collisionCentre.append(collisionslist[i].point.y)
-    #     collisionCentre.append(collisionslist[i].point.z)
-    # return RequestSweetInfoResponse(totalSweets, centrelist, collisions, totalCollisions, collisionCentre, anglelist)
-    return RequestSweetInfoResponse(totalSweets, centrelist, anglelist)
+    print colourAmounts
+    return RequestSweetInfoResponse(colourAmounts, centrelist, anglelist)
 
 def handle_reset_sweets(req):
     print "Returning ",req.reset

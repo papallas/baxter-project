@@ -59,6 +59,7 @@ add_service_files(
   RequestSweetInfo.srv
   LookForSweets.srv
   LookForBowl.srv
+  VoiceRequest.srv
 )
 
 ## Generate actions in the 'action' folder

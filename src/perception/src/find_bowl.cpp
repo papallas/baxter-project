@@ -31,25 +31,25 @@
 ros::Publisher pointPub;
 pcl_msgs::ModelCoefficients set_coefficients;
 
-std::vector <pcl::PointIndices> getObjectClusters(pcl::PointCloud<pcl::PointXYZ> cloud)
+std::vector <pcl::PointIndices> getObjectClusters(pcl::PointCloud<pcl::PointXYZRGB> cloud)
 {
-    pcl::search::Search<pcl::PointXYZ>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZ> > (new pcl::search::KdTree<pcl::PointXYZ>);
+    pcl::search::Search<pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGB> > (new pcl::search::KdTree<pcl::PointXYZRGB>);
     pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimator;
+    pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> normal_estimator;
     normal_estimator.setSearchMethod (tree);
     normal_estimator.setInputCloud (cloud.makeShared());
     normal_estimator.setKSearch (50);
     normal_estimator.compute (*normals);
 
     pcl::IndicesPtr indices (new std::vector <int>);
-    pcl::PassThrough<pcl::PointXYZ> pass;
+    pcl::PassThrough<pcl::PointXYZRGB> pass;
     pass.setInputCloud (cloud.makeShared());
     pass.setFilterFieldName ("z");
     pass.setFilterLimits (0.0, 1.0);
     pass.filter (*indices);
 
-    pcl::RegionGrowing<pcl::PointXYZ, pcl::Normal> reg;
-    reg.setMinClusterSize (200);
+    pcl::RegionGrowing<pcl::PointXYZRGB, pcl::Normal> reg;
+    reg.setMinClusterSize (2000);
     reg.setMaxClusterSize (1000000);
     reg.setSearchMethod (tree);
     reg.setNumberOfNeighbours (30);
@@ -61,6 +61,14 @@ std::vector <pcl::PointIndices> getObjectClusters(pcl::PointCloud<pcl::PointXYZ>
 
     std::vector <pcl::PointIndices> clusters;
     reg.extract (clusters);
+    // SHOW POINTCLOUD OF SEGMENTED REGIONS
+    /*pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud ();
+    pcl::visualization::CloudViewer viewer ("Cluster viewer");
+    viewer.showCloud (colored_cloud);
+    while (!viewer.wasStopped ())
+    {
+      boost::this_thread::sleep (boost::posix_time::microseconds (100));
+    }*/
     return clusters;
 }
 
@@ -82,10 +90,13 @@ std::vector <pcl::PointIndices> getColourClusters(pcl::PointCloud<pcl::PointXYZR
     reg.setDistanceThreshold (10);
     reg.setPointColorThreshold (6);
     reg.setRegionColorThreshold (5);
-    reg.setMinClusterSize (600);
+    reg.setMinClusterSize(600);
 
     std::vector <pcl::PointIndices> clusters;
     reg.extract (clusters);
+    for (int i = 0; i < clusters.size(); i++) {
+      std::cout << clusters[i].indices.size() << std::endl;
+    }
     // SHOW POINTCLOUD OF SEGMENTED REGIONS
     /*pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud ();
     pcl::visualization::CloudViewer viewer ("Cluster viewer");
@@ -147,9 +158,9 @@ pcl_msgs::ModelCoefficients getBowlInCloud(pcl::PointCloud<pcl::PointXYZRGB> whi
    seg.setMethodType (pcl::SAC_RANSAC);
    seg.setMaxIterations(1000);
    // Max distance of 1 cm between points
-   seg.setDistanceThreshold (0.0);
+   seg.setDistanceThreshold (0.2);
    // Set limit on size of bowl - not search too big or too small circles
-   seg.setRadiusLimits(0.05,0.07);
+   seg.setRadiusLimits(0.05,0.12);
 
    // Set the PCL cloud as the input and segment into the inliers/coefficients
    seg.setInputCloud (whiteCloud.makeShared());
@@ -181,7 +192,7 @@ cloud_cb (const sensor_msgs::PointCloud2 cloud_msg)
   pcl::PointCloud<pcl::PointXYZRGB> pcl_color;
   pcl::fromROSMsg (cloud_msg, pcl_color);
 
-  std::vector <pcl::PointIndices> clusters = getColourClusters(pcl_color);
+  std::vector <pcl::PointIndices> clusters = getObjectClusters(pcl_color);
 
   pcl::PointCloud<pcl::PointXYZRGB> whiteCloud = getWhiteObjectCloud(clusters,
                 pcl_color);

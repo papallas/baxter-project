@@ -47,6 +47,14 @@ rospy.init_node("pick_up_sweets", anonymous = True)
 
 global gripped
 
+global redGiven
+global greenGiven
+global blueGiven
+
+redGiven = 0
+greenGiven = 0
+blueGiven = 0
+
 class locateAndMove():
 
     def __init__(self):
@@ -106,6 +114,8 @@ class locateAndMove():
         self.twist = np.array([[.0],[.0],[.0],[.0],[.0],[.0]])
 
         self.MINZ = -0.215
+
+        self.head = baxter_interface.Head()
 
 
     def move_to_point(self, limb, x, y, z):
@@ -444,12 +454,12 @@ class locateAndMove():
             self.moveSweetToArea()
 
     def move_to_grab_bowl(self, x, y, z):
-        self.move_and_rotate("left", x, y+0.068, -0.15, self.left_pose[3], self.left_pose[4], self.left_pose[5])
+        self.move_and_rotate("left", x, y+0.05, -0.15, self.left_pose[3], self.left_pose[4], self.left_pose[5])
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2],
         self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.19,
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.197,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
     def bowl_tip_trial(self, x, y, z):
@@ -457,31 +467,30 @@ class locateAndMove():
 
         self.left_interface.set_joint_position_speed(0.2)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.04,
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.05,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.1)
-
         # -0.17
-        self.move_and_rotate("left", 0.59, -0.25, self.left_pose[2],
+        self.move_and_rotate("left", 0.59, -0.25, self.left_pose[2]+0.02,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.5)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
-        self.left_pose[3]-0.45,self.left_pose[4],self.left_pose[5])
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.02,
+        self.left_pose[3]-0.3,self.left_pose[4],self.left_pose[5])
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
-        self.left_pose[3]+0.45,self.left_pose[4],self.left_pose[5])
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.02,
+        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
 
         self.move_and_rotate("left", 0.59, -0.15, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
-        self.left_pose[3]-0.45,self.left_pose[4],self.left_pose[5])
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.02,
+        self.left_pose[3]-0.4,self.left_pose[4],self.left_pose[5])
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.03,
-        self.left_pose[3]+0.45,self.left_pose[4],self.left_pose[5])
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.02,
+        self.left_pose[3]+0.4,self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.1)
 
@@ -497,14 +506,21 @@ class locateAndMove():
         self._right_grip.open()
 
     def moveToSweets(self):
-        self.move_and_rotate("right", 0.75, -0.25, 0.15, self.right_pose[3]
+        self.move_and_rotate("right", 0.8, -0.25, 0.15, self.right_pose[3]
             , self.right_pose[4], self.right_pose[5])
 
-    def move_and_pick_up_sweet(self, x, y, z):
+    def move_and_pick_up_sweet(self, colour, angle, x, y, z):
         self.right_interface.set_joint_position_speed(0.3)
 
-        self.move_and_rotate("right", x, y, 0,
-        self.right_pose[3],self.right_pose[4],self.right_pose[5])
+        defaultrotation = -2.8676
+        sweetOrientation = 90 / (180/math.pi)
+        # overall = defaultrotation + sweetOrientation
+
+        # overall = -2.8676 + (90/(180/math.pi)) + angle
+        overall = -2.8676 + ((90/(180/math.pi)) - angle)
+
+        self.move_and_rotate("right", x, y, -0.15,
+        self.right_pose[3],self.right_pose[4],overall)
 
         self.right_interface.set_joint_position_speed(0.1)
 
@@ -518,14 +534,23 @@ class locateAndMove():
 
         global gripped
 
-        print "Sweet gripped? ",gripped
         if gripped == True:
             self.right_interface.set_joint_position_speed(0.3)
 
-            self.move_and_rotate("right", 0.8, -0.25, 0,
-            self.right_pose[3],self.right_pose[4],self.right_pose[5])
+            self.move_and_rotate("right", 0.7, 0, 0,
+            self.right_pose[3],self.right_pose[4],-2.8676)
 
             self._right_grip.open()
+
+            if colour == 0:
+                global redGiven
+                redGiven = redGiven + 1
+            if colour == 1:
+                global greenGiven
+                greenGiven = greenGiven + 1
+            if colour == 2:
+                global blueGiven
+                blueGiven = blueGiven + 1
 
         if gripped == False:
             self._right_grip.open()
@@ -588,8 +613,35 @@ class locateAndMove():
         try:
             sweet_number_req = rospy.ServiceProxy('publish_sweet_info', RequestSweetInfo)
             resp = sweet_number_req("")
-            return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos
+            # return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos, resp.angleList
+            return resp.n, resp.pos, resp.angleList
 
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+    def get_voice_command(self):
+        print "Waiting for voice command"
+        rospy.wait_for_service('get_voice')
+        try:
+            voice_req = rospy.ServiceProxy('get_voice', VoiceRequest)
+            resp = voice_req("")
+            # return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos, resp.angleList
+            return resp.sweetNumber
+
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+    def wait_for_person(self):
+        self.move_and_rotate("right", 0.4404, -0.5915, 0.0420,
+        -2.9815,-0.0122,-0.7517)
+        self.head.set_pan(-0.5)
+
+        print "Waiting for voice command"
+        rospy.wait_for_service('look_for_person')
+        try:
+            person_req = rospy.ServiceProxy('look_for_person', PersonRequest)
+            resp = person_req("")
+            return resp.ok
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
@@ -605,92 +657,139 @@ def gripperholding(state):
 if __name__ == '__main__':
     rospy.Subscriber("/robot/end_effector/right_gripper/state", EndEffectorState, gripperholding)
 
-
-    "Setting up Baxter movement"
     move = locateAndMove()
+    move.print_arm_pose()
+    move.wait_for_person()
 
-    sweetRequest = 5
-    num = 0
 
-    # ok = move.reset_bowl()
-    # rospy.sleep(6)
-    #
-    # [x, y, z] = move.get_pos_client()
-    # print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
 
-    # move.move_to_grab_bowl(x, y, z)
-
-    while (num < sweetRequest):
-        # move.bowl_tip_trial(x, y, z)
-        move._right_grip.open()
-        move.moveToSweets()
-        string = move.reset_sweets()
-
-        # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
-        num, centres, collisions, collisionNum, collisionPos = move.get_sweet_client()
-
-        if (num == 0):
-            print "No sweets found on the table"
-        if (num == 1):
-            print str(num), "sweet found on the table"
-        if (num > 1):
-            print str(num), "sweets found on the table"
-        if (collisionNum != 0):
-            print str(collisionNum),"collisions of sweets"
-
-        if num >= sweetRequest:
-            print "Total number of sweets is greater than request"
-            break
-
-        if num < sweetRequest:
-            while collisions == "True":
-                points = []
-                for i in range(0, ((len(collisionPos)+1)/3)):
-                    points.append((collisionPos[(i*3)+0], collisionPos[(i*3)+1], collisionPos[(i*3)+2]))
-
-                for i in range(0, collisionNum):
-                    currpoint = points[i]
-                    move.separate_collision(1, currpoint[0], currpoint[1], currpoint[2])
-
-                move.moveToSweets()
-                string = move.reset_sweets()
-                rospy.sleep(5)
-
-                # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
-                num, centres, collisions, collisionNum, collisionPos = move.get_sweet_client()
-
-        move._right_grip.open()
-
-        if (num == 0):
-            print "No sweets found on the table"
-        if (num == 1):
-            print str(num), "sweet found on the table"
-        if (num > 1):
-            print str(num), "sweets found on the table"
-        if (collisionNum != 0):
-            print str(collisionNum),"collisions of sweets"
-
-    numGiven = 0
-    while sweetRequest > 0:
-        points = []
-        print (len(centres)+1)/3
-        for i in range(0, ((len(centres)+1)/3)):
-            points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
-
-        for i in range(0, sweetRequest):
-            currpoint = points[i]
-            move.move_and_pick_up_sweet(currpoint[0], currpoint[1], currpoint[2])
-
-        move.moveToSweets()
-        string = move.reset_sweets()
-        rospy.sleep(5)
-
-        # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
-        newNum, centres, collisions, collisionNum, collisionPos = move.get_sweet_client()
-        numGiven = num - newNum
-        num = newNum
-
-        print str(numGiven)," sweets have been given to the customer"
-        sweetRequest = sweetRequest - numGiven
-        print "Need to give them ",str(sweetRequest),"more"
-    print"Success! Customer has all their sweets!"
+#     while True:
+# `       `
+#
+#         global overallGiven
+#         overallGiven = 0
+#         global redGiven
+#         redGiven = 0
+#         global blueGiven
+#         blueGiven = 0
+#         global greenGiven
+#         greenGiven = 0
+#         # sweetRequests = move.get_voice_command();
+#         # blueRequest = sweetRequests[2]
+#         # greenRequest = sweetRequests[1]
+#         # redRequest = sweetRequests[0]
+#         blueRequest = 1
+#         greenRequest = 1
+#         redRequest = 1
+#         print"Customer wants ",blueRequest," blue sweets, ",greenRequest," green sweets and ",redRequest," red sweets"
+#
+#
+#         # ok = move.reset_bowl()
+#         # rospy.sleep(6)
+#         #
+#         # [x, y, z] = move.get_pos_client()
+#         # print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
+#         #
+#         # move.move_to_grab_bowl(x, y, z)
+#         num = [0,0,0]
+#
+#         while (num[2] < blueRequest or num[1] < greenRequest or num[0] < redRequest):
+#             # move.bowl_tip_trial(x, y, z)
+#             move._right_grip.open()
+#             move.moveToSweets()
+#             string = move.reset_sweets()
+#
+#             # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
+#             # num, centres, collisions, collisionNum, collisionPos, anglelist = move.get_sweet_client()
+#             num, centres, anglelist = move.get_sweet_client()
+#
+#             if (num[0] != 0):
+#                 print str(num[0])," red sweets found on the table"
+#             if (num[1] != 0):
+#                 print str(num[1]), " green sweets found on the table"
+#             if (num[2] != 0):
+#                 print str(num[2]), " blue sweets found on the table"
+#             # if (collisionNum != 0):
+#             #     print str(collisionNum),"collisions of sweets"
+#
+#             if (num[2] >= blueRequest and num[1] >= greenRequest and num[0] >= redRequest):
+#                 print "Total number of sweets is greater than request"
+#                 break
+#
+#             move._right_grip.open()
+#
+#         numGiven = 0
+#
+#         global redGiven
+#         while redGiven < redRequest:
+#             points = []
+#             # print (len(centres)+1)/3
+#             for i in range(0, ((len(centres)+1)/3)):
+#                 points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+#
+#             redpoints = points[0:num[0]]
+#             redangles = anglelist[0:num[0]]
+#             for i in range(0, len(redpoints)):
+#                 currpoint = redpoints[i]
+#                 move.move_and_pick_up_sweet(0, redangles[i], currpoint[0], currpoint[1], currpoint[2])
+#                 if redGiven == redRequest:
+#                     print "All ",str(redRequest)," red sweets have been given to the customer"
+#                     break
+#             if redGiven == redRequest:
+#                 print "All ",str(redRequest)," red sweets have been given to the customer"
+#                 break
+#             move.moveToSweets()
+#             string = move.reset_sweets()
+#
+#             num, centres, anglelist = move.get_sweet_client()
+#             print str(redGiven)," red sweets have been given to the customer"
+#
+#         global greenGiven
+#         while greenGiven < greenRequest:
+#             points = []
+#             # print (len(centres)+1)/3
+#             for i in range(0, ((len(centres)+1)/3)):
+#                 points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+#
+#             greenpoints = points[num[0]:num[0]+num[1]]
+#             greenangles = anglelist[num[0]:num[0]+num[1]]
+#             for i in range(0, len(greenpoints)):
+#                 currpoint = greenpoints[i]
+#                 move.move_and_pick_up_sweet(1, greenangles[i], currpoint[0], currpoint[1], currpoint[2])
+#                 if greenGiven == greenRequest:
+#                     print "All ",str(greenRequest)," green sweets have been given to the customer"
+#                     break
+#             if greenGiven == greenRequest:
+#                 print "All ",str(greenRequest)," green sweets have been given to the customer"
+#                 break
+#             move.moveToSweets()
+#             string = move.reset_sweets()
+#
+#             num, centres, anglelist = move.get_sweet_client()
+#             print str(greenGiven)," green sweets have been given to the customer"
+#
+#         global blueGiven
+#         while blueGiven < blueRequest:
+#             points = []
+#             # print (len(centres)+1)/3
+#             for i in range(0, ((len(centres)+1)/3)):
+#                 points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+#
+#             bluepoints = points[num[0]+num[1]:len(points)]
+#             blueangles = anglelist[num[0]+num[1]:len(points)]
+#             for i in range(0, len(bluepoints)):
+#                 currpoint = bluepoints[i]
+#                 move.move_and_pick_up_sweet(2, blueangles[i], currpoint[0], currpoint[1], currpoint[2])
+#                 if blueGiven == blueRequest:
+#                     print "All ",str(blueRequest)," blue sweets have been given to the customer"
+#                     break
+#             if blueGiven == blueRequest:
+#                 print "All ",str(blueRequest)," blue sweets have been given to the customer"
+#                 break
+#             move.moveToSweets()
+#             string = move.reset_sweets()
+#
+#             num, centres, anglelist = move.get_sweet_client()
+#             print str(blueGiven)," blue sweets have been given to the customer"
+#
+#         print"Success! Customer has all their sweets!"
