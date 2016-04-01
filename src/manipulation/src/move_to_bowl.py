@@ -506,8 +506,7 @@ class locateAndMove():
         self._right_grip.open()
 
     def moveToSweets(self):
-        self.move_and_rotate("right", 0.8, -0.25, 0.15, self.right_pose[3]
-            , self.right_pose[4], self.right_pose[5])
+        self.move_and_rotate("right", 0.8, -0.25, 0.15, -3.0999, 0.0441, -2.8676)
 
     def move_and_pick_up_sweet(self, colour, angle, x, y, z):
         self.right_interface.set_joint_position_speed(0.3)
@@ -518,6 +517,8 @@ class locateAndMove():
 
         # overall = -2.8676 + (90/(180/math.pi)) + angle
         overall = -2.8676 + ((90/(180/math.pi)) - angle)
+
+        x = x + 0.005
 
         self.move_and_rotate("right", x, y, -0.15,
         self.right_pose[3],self.right_pose[4],overall)
@@ -632,14 +633,25 @@ class locateAndMove():
             print "Service call failed: %s"%e
 
     def wait_for_person(self):
-        self.move_and_rotate("right", 0.4404, -0.5915, 0.0420,
-        -2.9815,-0.0122,-0.7517)
+        positions = {'right_e0': 0.5250049246537829, 'right_e1': 1.9450876390387046, 'right_s0': -0.3804272353955826, \
+                     'right_s1': -1.1692768555656565, 'right_w0': -0.02569417819708068, 'right_w1': 0.8421554525490922, 'right_w2': 0.30104372962251247}
+
+        # 'right_s0': 0.5250049246537829, 'right_s1': 1.9450876390387046, \
+        # 'right_e0': -0.3804272353955826, 'right_e1': -1.1692768555656565, \
+        # 'right_w0': -0.02569417819708068,  'right_w1':  0.8421554525490922, 'right_w2':  0.30104372962251247}
+        #
+        # 'right_e0', 'right_e1', 'right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2'
+        # 0.5250049246537829, 1.9450876390387046, -0.3804272353955826, -1.1692768555656565, -0.02569417819708068, 0.8421554525490922, 0.30104372962251247
+        self.right_interface.move_to_joint_positions(positions)
+        # self.move_and_rotate("right", 0.4404, -0.5915, 0.0420,
+        # -2.9815,-0.0122,-0.7517)
         self.head.set_pan(-0.5)
 
-        print "Waiting for voice command"
+        print "Waiting for person"
+        rospy.sleep(2)
         rospy.wait_for_service('look_for_person')
         try:
-            person_req = rospy.ServiceProxy('look_for_person', PersonRequest)
+            person_req = rospy.ServiceProxy('look_for_person', RequestPerson)
             resp = person_req("")
             return resp.ok
         except rospy.ServiceException, e:
@@ -659,137 +671,136 @@ if __name__ == '__main__':
 
     move = locateAndMove()
     move.print_arm_pose()
-    move.wait_for_person()
 
 
+    while True:
+        string = move.wait_for_person()
+        print "Person exists"
 
-#     while True:
-# `       `
-#
-#         global overallGiven
-#         overallGiven = 0
-#         global redGiven
-#         redGiven = 0
-#         global blueGiven
-#         blueGiven = 0
-#         global greenGiven
-#         greenGiven = 0
-#         # sweetRequests = move.get_voice_command();
-#         # blueRequest = sweetRequests[2]
-#         # greenRequest = sweetRequests[1]
-#         # redRequest = sweetRequests[0]
-#         blueRequest = 1
-#         greenRequest = 1
-#         redRequest = 1
-#         print"Customer wants ",blueRequest," blue sweets, ",greenRequest," green sweets and ",redRequest," red sweets"
-#
-#
-#         # ok = move.reset_bowl()
-#         # rospy.sleep(6)
-#         #
-#         # [x, y, z] = move.get_pos_client()
-#         # print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
-#         #
-#         # move.move_to_grab_bowl(x, y, z)
-#         num = [0,0,0]
-#
-#         while (num[2] < blueRequest or num[1] < greenRequest or num[0] < redRequest):
-#             # move.bowl_tip_trial(x, y, z)
-#             move._right_grip.open()
-#             move.moveToSweets()
-#             string = move.reset_sweets()
-#
-#             # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
-#             # num, centres, collisions, collisionNum, collisionPos, anglelist = move.get_sweet_client()
-#             num, centres, anglelist = move.get_sweet_client()
-#
-#             if (num[0] != 0):
-#                 print str(num[0])," red sweets found on the table"
-#             if (num[1] != 0):
-#                 print str(num[1]), " green sweets found on the table"
-#             if (num[2] != 0):
-#                 print str(num[2]), " blue sweets found on the table"
-#             # if (collisionNum != 0):
-#             #     print str(collisionNum),"collisions of sweets"
-#
-#             if (num[2] >= blueRequest and num[1] >= greenRequest and num[0] >= redRequest):
-#                 print "Total number of sweets is greater than request"
-#                 break
-#
-#             move._right_grip.open()
-#
-#         numGiven = 0
-#
-#         global redGiven
-#         while redGiven < redRequest:
-#             points = []
-#             # print (len(centres)+1)/3
-#             for i in range(0, ((len(centres)+1)/3)):
-#                 points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
-#
-#             redpoints = points[0:num[0]]
-#             redangles = anglelist[0:num[0]]
-#             for i in range(0, len(redpoints)):
-#                 currpoint = redpoints[i]
-#                 move.move_and_pick_up_sweet(0, redangles[i], currpoint[0], currpoint[1], currpoint[2])
-#                 if redGiven == redRequest:
-#                     print "All ",str(redRequest)," red sweets have been given to the customer"
-#                     break
-#             if redGiven == redRequest:
-#                 print "All ",str(redRequest)," red sweets have been given to the customer"
-#                 break
-#             move.moveToSweets()
-#             string = move.reset_sweets()
-#
-#             num, centres, anglelist = move.get_sweet_client()
-#             print str(redGiven)," red sweets have been given to the customer"
-#
-#         global greenGiven
-#         while greenGiven < greenRequest:
-#             points = []
-#             # print (len(centres)+1)/3
-#             for i in range(0, ((len(centres)+1)/3)):
-#                 points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
-#
-#             greenpoints = points[num[0]:num[0]+num[1]]
-#             greenangles = anglelist[num[0]:num[0]+num[1]]
-#             for i in range(0, len(greenpoints)):
-#                 currpoint = greenpoints[i]
-#                 move.move_and_pick_up_sweet(1, greenangles[i], currpoint[0], currpoint[1], currpoint[2])
-#                 if greenGiven == greenRequest:
-#                     print "All ",str(greenRequest)," green sweets have been given to the customer"
-#                     break
-#             if greenGiven == greenRequest:
-#                 print "All ",str(greenRequest)," green sweets have been given to the customer"
-#                 break
-#             move.moveToSweets()
-#             string = move.reset_sweets()
-#
-#             num, centres, anglelist = move.get_sweet_client()
-#             print str(greenGiven)," green sweets have been given to the customer"
-#
-#         global blueGiven
-#         while blueGiven < blueRequest:
-#             points = []
-#             # print (len(centres)+1)/3
-#             for i in range(0, ((len(centres)+1)/3)):
-#                 points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
-#
-#             bluepoints = points[num[0]+num[1]:len(points)]
-#             blueangles = anglelist[num[0]+num[1]:len(points)]
-#             for i in range(0, len(bluepoints)):
-#                 currpoint = bluepoints[i]
-#                 move.move_and_pick_up_sweet(2, blueangles[i], currpoint[0], currpoint[1], currpoint[2])
-#                 if blueGiven == blueRequest:
-#                     print "All ",str(blueRequest)," blue sweets have been given to the customer"
-#                     break
-#             if blueGiven == blueRequest:
-#                 print "All ",str(blueRequest)," blue sweets have been given to the customer"
-#                 break
-#             move.moveToSweets()
-#             string = move.reset_sweets()
-#
-#             num, centres, anglelist = move.get_sweet_client()
-#             print str(blueGiven)," blue sweets have been given to the customer"
-#
-#         print"Success! Customer has all their sweets!"
+        global overallGiven
+        overallGiven = 0
+        global redGiven
+        redGiven = 0
+        global blueGiven
+        blueGiven = 0
+        global greenGiven
+        greenGiven = 0
+        # sweetRequests = move.get_voice_command();
+        # blueRequest = sweetRequests[2]
+        # greenRequest = sweetRequests[1]
+        # redRequest = sweetRequests[0]
+        blueRequest = 1
+        greenRequest = 1
+        redRequest = 1
+        print"Customer wants ",blueRequest," blue sweets, ",greenRequest," green sweets and ",redRequest," red sweets"
+
+
+        # ok = move.reset_bowl()
+        # rospy.sleep(6)
+        #
+        # [x, y, z] = move.get_pos_client()
+        # print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
+        #
+        # move.move_to_grab_bowl(x, y, z)
+        num = [0,0,0]
+
+        while (num[2] < blueRequest or num[1] < greenRequest or num[0] < redRequest):
+            # move.bowl_tip_trial(x, y, z)
+            move._right_grip.open()
+            move.moveToSweets()
+            string = move.reset_sweets()
+
+            # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
+            # num, centres, collisions, collisionNum, collisionPos, anglelist = move.get_sweet_client()
+            num, centres, anglelist = move.get_sweet_client()
+
+            if (num[0] != 0):
+                print str(num[0])," red sweets found on the table"
+            if (num[1] != 0):
+                print str(num[1]), " green sweets found on the table"
+            if (num[2] != 0):
+                print str(num[2]), " blue sweets found on the table"
+            # if (collisionNum != 0):
+            #     print str(collisionNum),"collisions of sweets"
+
+            if (num[2] >= blueRequest and num[1] >= greenRequest and num[0] >= redRequest):
+                print "Total number of sweets is greater than request"
+                break
+
+            move._right_grip.open()
+
+        numGiven = 0
+
+        global redGiven
+        while redGiven < redRequest:
+            points = []
+            # print (len(centres)+1)/3
+            for i in range(0, ((len(centres)+1)/3)):
+                points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+
+            redpoints = points[0:num[0]]
+            redangles = anglelist[0:num[0]]
+            for i in range(0, len(redpoints)):
+                currpoint = redpoints[i]
+                move.move_and_pick_up_sweet(0, redangles[i], currpoint[0], currpoint[1], currpoint[2])
+                if redGiven == redRequest:
+                    print "All ",str(redRequest)," red sweets have been given to the customer"
+                    break
+            if redGiven == redRequest:
+                print "All ",str(redRequest)," red sweets have been given to the customer"
+                break
+            move.moveToSweets()
+            string = move.reset_sweets()
+
+            num, centres, anglelist = move.get_sweet_client()
+            print str(redGiven)," red sweets have been given to the customer"
+
+        global greenGiven
+        while greenGiven < greenRequest:
+            points = []
+            # print (len(centres)+1)/3
+            for i in range(0, ((len(centres)+1)/3)):
+                points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+
+            greenpoints = points[num[0]:num[0]+num[1]]
+            greenangles = anglelist[num[0]:num[0]+num[1]]
+            for i in range(0, len(greenpoints)):
+                currpoint = greenpoints[i]
+                move.move_and_pick_up_sweet(1, greenangles[i], currpoint[0], currpoint[1], currpoint[2])
+                if greenGiven == greenRequest:
+                    print "All ",str(greenRequest)," green sweets have been given to the customer"
+                    break
+            if greenGiven == greenRequest:
+                print "All ",str(greenRequest)," green sweets have been given to the customer"
+                break
+            move.moveToSweets()
+            string = move.reset_sweets()
+
+            num, centres, anglelist = move.get_sweet_client()
+            print str(greenGiven)," green sweets have been given to the customer"
+
+        global blueGiven
+        while blueGiven < blueRequest:
+            points = []
+            # print (len(centres)+1)/3
+            for i in range(0, ((len(centres)+1)/3)):
+                points.append((centres[(i*3)+0], centres[(i*3)+1], centres[(i*3)+2]))
+
+            bluepoints = points[num[0]+num[1]:len(points)]
+            blueangles = anglelist[num[0]+num[1]:len(points)]
+            for i in range(0, len(bluepoints)):
+                currpoint = bluepoints[i]
+                move.move_and_pick_up_sweet(2, blueangles[i], currpoint[0], currpoint[1], currpoint[2])
+                if blueGiven == blueRequest:
+                    print "All ",str(blueRequest)," blue sweets have been given to the customer"
+                    break
+            if blueGiven == blueRequest:
+                print "All ",str(blueRequest)," blue sweets have been given to the customer"
+                break
+            move.moveToSweets()
+            string = move.reset_sweets()
+
+            num, centres, anglelist = move.get_sweet_client()
+            print str(blueGiven)," blue sweets have been given to the customer"
+
+        print"Success! Customer has all their sweets!"

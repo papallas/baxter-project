@@ -38,10 +38,17 @@ global receivedimage
 receivedimage = 0
 global backgroundimage
 
+global resetbackground
+resetbackground = False
+
 global personFrame
 personFrame = 0
+global nopersonFrame
+nopersonFrame = 0
 global personExists
 personExists = False
+global personStayed
+personStayed = False
 
 #Thresholds image and stores position of object in (x,y) coordinates of the camera's frame, with origin at center.
 def callback(message):
@@ -52,9 +59,13 @@ def callback(message):
     cv_image = br.imgmsg_to_cv2(message, "bgr8")
     cv_image = cv2.GaussianBlur(cv_image,(5,5),0)
 
-    if receivedimage == 0:
+    global nopersonFrame
+    global resetbackground
+    if receivedimage == 0 or resetbackground == True or nopersonFrame == 100:
         global backgroundimage
         backgroundimage = cv_image
+        resetbackground = False
+        nopersonFrame = 0
 
     subtracted = cv2.absdiff(backgroundimage, cv_image)
 
@@ -71,6 +82,8 @@ def callback(message):
     cns = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
 
     global personExists
+    global personStayed
+
     for cont in cns:
         if 10000 < cv2.contourArea(cont) < 40000:
             #print cv2.contourArea(cont)
@@ -81,11 +94,14 @@ def callback(message):
         if (any(10000 < cv2.contourArea(cont) < 40000 for cont in cns)) == False:
             print "PERSON HAS EXITED FRAME AND DOES NOT WANT SWEETS"
             personExists = False
+            personStayed = False
+
 
 
     global personFrame
     if personFrame == 50:
         print "PERSON ENTERED FRAME AND WANTS SWEETS"
+        personStayed = True
 
     cv2.imshow('image', cv_image)
     cv2.imshow('thresh1', thresh1)
@@ -94,14 +110,22 @@ def callback(message):
         personFrame = personFrame + 1
     if personExists == False:
         personFrame = 0
+        nopersonFrame = nopersonFrame + 1
 
     receivedimage = receivedimage + 1
 
     k = cv2.waitKey(1)
 
+def handle_person(req):
+    global resetbackground
+    resetbackground = True
+    global personStayed
+    while personStayed == False:
+        rospy.sleep(1)
+    personStayed = False
+    return RequestPersonResponse("OK")
 
 def main():
-
 
     rospy.init_node('view_head_cam', anonymous = True)
 
@@ -109,10 +133,7 @@ def main():
     # rospy.Subscriber(image_topic, Image, callback, queue_size = 1, buff_size=int(1024000))
     rospy.Subscriber(image_topic, Image, callback)
 
-    #s = rospy.Service('publish_sweet_info', RequestSweetInfo, publish_sweet_handle)
-
-    #t = rospy.Service('reset_sweets', LookForSweets, handle_reset_sweets)
-
+    t = rospy.Service('look_for_person', RequestPerson, handle_person)
 
     #Keep from exiting until this node is stopped
     rospy.spin()
