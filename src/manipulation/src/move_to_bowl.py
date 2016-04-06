@@ -5,11 +5,15 @@ import sys
 import struct
 import threading
 
+import socket
+import time
+
 from copy import copy
 import numpy as np
 
 import rospy
 import actionlib
+from collections import defaultdict
 
 from geometry_msgs.msg import (
     PoseStamped,
@@ -38,7 +42,6 @@ import tf
 import math
 
 from std_msgs.msg import UInt16
-
 
 # move a limb
 # update pose in x and y direction
@@ -425,19 +428,6 @@ class locateAndMove():
         self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
 
         for i in range(0,5):
-            # self._pub_rate.publish(500)
-            #
-            # move = {'left_w0': 5, 'left_w1': 5, 'left_w2': 5, 'left_e0': 5, 'left_e1': 5, 'left_s0': 5, 'left_s1': 5}
-            # move2 = {'left_w0': -1, 'left_w1': -1, 'left_w2': -1, 'left_e0': -1, 'left_e1': -1, 'left_s0': -1, 'left_s1': -1}
-            # move3 = {'left_w0': 0, 'left_w1': 0, 'left_w2': 0, 'left_e0': 0, 'left_e1':  0, 'left_s0': 0, 'left_s1': 0}
-            #
-            # self.left_interface.set_joint_velocities(move)
-            # self.left_interface.set_joint_velocities(move)
-            # self.left_interface.set_joint_velocities(move)
-            # self.left_interface.set_joint_velocities(move)
-            # self.left_interface.set_joint_velocities(move3)
-            # self.left_interface.set_joint_velocities(move2)
-            # self.left_interface.set_joint_velocities(move3)
 
             self.move_and_rotate("left", self.left_pose[0]-0.04, self.left_pose[1], self.left_pose[2]+0.03,
             self.left_pose[3],self.left_pose[4],self.left_pose[5])
@@ -462,53 +452,96 @@ class locateAndMove():
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.197,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
-    def bowl_tip_trial(self, x, y, z):
+    def bowl_tip_trial(self, x, y, z, pagex, pagey, initialtilt, height):
         self._left_grip.close()
 
         self.left_interface.set_joint_position_speed(0.2)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.05,
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.1,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.1)
         # -0.17
-        self.move_and_rotate("left", 0.59, -0.25, self.left_pose[2]+0.02,
-        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        if (initialtilt == True):
+            self.move_and_rotate("left", pagex-0.1, pagey-0.05, self.left_pose[2]+0.02,
+            self.left_pose[3]+0.5,self.left_pose[4],self.left_pose[5])
+        elif (initialtilt == False):
+            self.move_and_rotate("left", pagex-0.1, pagey, self.left_pose[2]+0.02,
+            self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        print "moved to pagex"
 
         self.left_interface.set_joint_position_speed(0.5)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.02,
-        self.left_pose[3]-0.3,self.left_pose[4],self.left_pose[5])
+        names = self.left_interface.joint_names()
+        angles = self.left_interface.joint_angles()
+        main = dict(angles)
+        print main
+        leftpos = main["left_w2"]
+        leftpos = leftpos - (1.5+(height*0.1))
+        main["left_w2"] = leftpos
+        self.left_interface.move_to_joint_positions(main)
+        leftpos = leftpos + (1.5+(height*0.1))
+        main["left_w2"] = leftpos
+        self.left_interface.move_to_joint_positions(main)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.02,
-        self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
-
-        self.move_and_rotate("left", 0.59, -0.15, self.left_pose[2],
+        self.move_and_rotate("left", pagex-0.1, pagey+0.15, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.02,
-        self.left_pose[3]-0.4,self.left_pose[4],self.left_pose[5])
+        names = self.left_interface.joint_names()
+        angles = self.left_interface.joint_angles()
+        main = dict(angles)
+        print main
+        leftpos = main["left_w2"]
+        leftpos = leftpos - (1.5+(height*0.1))
+        main["left_w2"] = leftpos
+        self.left_interface.move_to_joint_positions(main)
+        leftpos = leftpos + (1.5+(height*0.1))
+        main["left_w2"] = leftpos
+        self.left_interface.move_to_joint_positions(main)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.02,
-        self.left_pose[3]+0.4,self.left_pose[4],self.left_pose[5])
+        #self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.04+(height*0.01),
+        #self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        #self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.04+(height*0.01),
+        #self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        # self.move_and_rotate("left", pagex, pagey, self.left_pose[2],
+        # self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.5)
+        #
+        # self.move_and_rotate("left", pagex, pagey+0.1, self.left_pose[2],
+        # self.left_pose[3],self.left_pose[4],self.left_pose[5])
+        #
+        # self.move_and_rotate("left", pagex, pagey, self.left_pose[2],
+        # self.left_pose[3],self.left_pose[4],self.left_pose[5]-0.5)
+        #
+        # self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.04+(height*0.01),
+        # self.left_pose[3]-0.3-(height*0.05),self.left_pose[4],self.left_pose[5])
+        #
+        # self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.04+(height*0.01),
+        # self.left_pose[3]+0.3+(height*0.05),self.left_pose[4],self.left_pose[5])
+        #
+        # self.move_and_rotate("left", pagex, pagey, self.left_pose[2],
+        # self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.5)
 
         self.left_interface.set_joint_position_speed(0.1)
 
-        self.move_and_rotate("left", 0.59, self.left_pose[1]+0.24, self.left_pose[2],
+        self.move_and_rotate("left", 0.59, pagey+0.3, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.15,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
     def moveSweetToArea(self):
-        self.move_and_rotate("right", 0.5, -0.25, -0.1, self.right_pose[3]
+        self.move_and_rotate("right", pagex, pagey-0.3, -0.1, self.right_pose[3]
             , self.right_pose[4], self.right_pose[5])
         self._right_grip.open()
 
     def moveToSweets(self):
         self.move_and_rotate("right", 0.8, -0.25, 0.15, -3.0999, 0.0441, -2.8676)
 
-    def move_and_pick_up_sweet(self, colour, angle, x, y, z):
+    def move_and_pick_up_sweet(self, colour, angle, x, y, z, pagex, pagey):
         self.right_interface.set_joint_position_speed(0.3)
 
         defaultrotation = -2.8676
@@ -518,7 +551,7 @@ class locateAndMove():
         # overall = -2.8676 + (90/(180/math.pi)) + angle
         overall = -2.8676 + ((90/(180/math.pi)) - angle)
 
-        x = x + 0.005
+        x = x + 0.008
 
         self.move_and_rotate("right", x, y, -0.15,
         self.right_pose[3],self.right_pose[4],overall)
@@ -538,7 +571,7 @@ class locateAndMove():
         if gripped == True:
             self.right_interface.set_joint_position_speed(0.3)
 
-            self.move_and_rotate("right", 0.7, 0, 0,
+            self.move_and_rotate("right", pagex, pagey-0.3, 0,
             self.right_pose[3],self.right_pose[4],-2.8676)
 
             self._right_grip.open()
@@ -615,7 +648,7 @@ class locateAndMove():
             sweet_number_req = rospy.ServiceProxy('publish_sweet_info', RequestSweetInfo)
             resp = sweet_number_req("")
             # return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos, resp.angleList
-            return resp.n, resp.pos, resp.angleList
+            return resp.n, resp.pos, resp.angleList, resp.page
 
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
@@ -628,6 +661,18 @@ class locateAndMove():
             resp = voice_req("")
             # return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos, resp.angleList
             return resp.sweetNumber
+
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+    def get_app_command(self):
+        print "Waiting for voice command"
+        rospy.wait_for_service('get_command')
+        try:
+            voice_req = rospy.ServiceProxy('get_command', RequestCommand)
+            resp = voice_req("")
+            # return resp.n, resp.pos, resp.collisions, resp.collisionNum, resp.collisionPos, resp.angleList
+            return resp.n
 
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
@@ -670,11 +715,13 @@ if __name__ == '__main__':
     rospy.Subscriber("/robot/end_effector/right_gripper/state", EndEffectorState, gripperholding)
 
     move = locateAndMove()
-    move.print_arm_pose()
+    #move.print_arm_pose()
+
+
 
 
     while True:
-        string = move.wait_for_person()
+        #string = move.wait_for_person()
         print "Person exists"
 
         global overallGiven
@@ -689,11 +736,16 @@ if __name__ == '__main__':
         # blueRequest = sweetRequests[2]
         # greenRequest = sweetRequests[1]
         # redRequest = sweetRequests[0]
-        blueRequest = 1
-        greenRequest = 1
-        redRequest = 1
+        command = move.get_app_command()
+
+        blueRequest = command[0]
+        greenRequest = command[2]
+        redRequest = command[1]
         print"Customer wants ",blueRequest," blue sweets, ",greenRequest," green sweets and ",redRequest," red sweets"
 
+        move.moveToSweets()
+        string = move.reset_sweets()
+        num, centres, anglelist, page = move.get_sweet_client()
 
         # ok = move.reset_bowl()
         # rospy.sleep(6)
@@ -701,18 +753,25 @@ if __name__ == '__main__':
         # [x, y, z] = move.get_pos_client()
         # print "Current bowl position = " + str(x) + ", " + str(y) + ", " + str(z)
         #
-        # move.move_to_grab_bowl(x, y, z)
+        [x,y,z] = [0.6,0.25, -0.2]
+        move.move_to_grab_bowl(x, y, z)
         num = [0,0,0]
+        count = 0
 
         while (num[2] < blueRequest or num[1] < greenRequest or num[0] < redRequest):
-            # move.bowl_tip_trial(x, y, z)
+            if count == 0:
+                move.bowl_tip_trial(x, y, z, page[0], page[1], True, count)
+            else:
+                move.bowl_tip_trial(x, y, z, page[0], page[1], False, count)
             move._right_grip.open()
             move.moveToSweets()
             string = move.reset_sweets()
 
+            count = count + 1
+
             # GET NUMBER OF SWEETS AND THEIR CENTRES FROM FIND_COLOURED_SWEETS.PY NODE
             # num, centres, collisions, collisionNum, collisionPos, anglelist = move.get_sweet_client()
-            num, centres, anglelist = move.get_sweet_client()
+            num, centres, anglelist, centrepage = move.get_sweet_client()
 
             if (num[0] != 0):
                 print str(num[0])," red sweets found on the table"
@@ -742,7 +801,7 @@ if __name__ == '__main__':
             redangles = anglelist[0:num[0]]
             for i in range(0, len(redpoints)):
                 currpoint = redpoints[i]
-                move.move_and_pick_up_sweet(0, redangles[i], currpoint[0], currpoint[1], currpoint[2])
+                move.move_and_pick_up_sweet(0, redangles[i], currpoint[0], currpoint[1], currpoint[2], page[0], page[1])
                 if redGiven == redRequest:
                     print "All ",str(redRequest)," red sweets have been given to the customer"
                     break
@@ -766,7 +825,7 @@ if __name__ == '__main__':
             greenangles = anglelist[num[0]:num[0]+num[1]]
             for i in range(0, len(greenpoints)):
                 currpoint = greenpoints[i]
-                move.move_and_pick_up_sweet(1, greenangles[i], currpoint[0], currpoint[1], currpoint[2])
+                move.move_and_pick_up_sweet(1, greenangles[i], currpoint[0], currpoint[1], currpoint[2], page[0], page[1])
                 if greenGiven == greenRequest:
                     print "All ",str(greenRequest)," green sweets have been given to the customer"
                     break
@@ -790,7 +849,7 @@ if __name__ == '__main__':
             blueangles = anglelist[num[0]+num[1]:len(points)]
             for i in range(0, len(bluepoints)):
                 currpoint = bluepoints[i]
-                move.move_and_pick_up_sweet(2, blueangles[i], currpoint[0], currpoint[1], currpoint[2])
+                move.move_and_pick_up_sweet(2, blueangles[i], currpoint[0], currpoint[1], currpoint[2], page[0], page[1])
                 if blueGiven == blueRequest:
                     print "All ",str(blueRequest)," blue sweets have been given to the customer"
                     break

@@ -3,3 +3,4 @@ string A
 int8[] n
 float64[] pos
 float64[] angleList
+float64[] page

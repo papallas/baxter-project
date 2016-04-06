@@ -55,8 +55,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
+  RequestCommand.srv
   RequestBowlPos.srv
   RequestSweetInfo.srv
+  RequestPerson.srv
   LookForSweets.srv
   LookForBowl.srv
   VoiceRequest.srv
