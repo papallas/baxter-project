@@ -452,41 +452,57 @@ class locateAndMove():
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.197,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
+    def update_left(self):
+        quaternion_pose = self.left_interface.endpoint_pose()
+        position        = quaternion_pose['position']
+        quaternion      = quaternion_pose['orientation']
+        euler           = tf.transformations.euler_from_quaternion(quaternion)
+
+        self.left_pose = [position[0], position[1], position[2], euler[0], euler[1], euler[2]]
+
     def bowl_tip_trial(self, x, y, z, pagex, pagey, initialtilt, height):
         self._left_grip.close()
 
         self.left_interface.set_joint_position_speed(0.2)
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.1,
-        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+        if (initialtilt == True):
+            self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.1,
+            self.left_pose[3]+0.5,self.left_pose[4],self.left_pose[5])
+        elif (initialtilt == False):
+            self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.1,
+            self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.left_interface.set_joint_position_speed(0.1)
         # -0.17
 
-        if (initialtilt == True):
-            self.move_and_rotate("left", pagex-0.1, pagey-0.05, self.left_pose[2]+0.02,
-            self.left_pose[3]+0.5,self.left_pose[4],self.left_pose[5])
-        elif (initialtilt == False):
-            self.move_and_rotate("left", pagex-0.1, pagey, self.left_pose[2]+0.02,
-            self.left_pose[3],self.left_pose[4],self.left_pose[5])
-
+        self.move_and_rotate("left", pagex-0.21, pagey-0.05, self.left_pose[2]+0.05,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
         print "moved to pagex"
 
-        self.left_interface.set_joint_position_speed(0.5)
+        self.left_interface.set_joint_position_speed(0.1)
 
         names = self.left_interface.joint_names()
         angles = self.left_interface.joint_angles()
         main = dict(angles)
-        print main
         leftpos = main["left_w2"]
-        leftpos = leftpos - (1.5+(height*0.1))
-        main["left_w2"] = leftpos
-        self.left_interface.move_to_joint_positions(main)
-        leftpos = leftpos + (1.5+(height*0.1))
+        leftpos = leftpos - (1.2+(height*0.2))
         main["left_w2"] = leftpos
         self.left_interface.move_to_joint_positions(main)
 
-        self.move_and_rotate("left", pagex-0.1, pagey+0.15, self.left_pose[2],
+        self.update_left()
+
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]-0.04,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5])
+
+        self.left_interface.set_joint_position_speed(0.9)
+
+        self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1], self.left_pose[2]+0.15,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5]-0.2)
+
+        self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1], self.left_pose[2]-0.15,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.2)
+
+        self.move_and_rotate("left", pagex-0.21, pagey+0.08, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         names = self.left_interface.joint_names()
@@ -494,12 +510,27 @@ class locateAndMove():
         main = dict(angles)
         print main
         leftpos = main["left_w2"]
-        leftpos = leftpos - (1.5+(height*0.1))
+        leftpos = leftpos - (0.2)
         main["left_w2"] = leftpos
         self.left_interface.move_to_joint_positions(main)
-        leftpos = leftpos + (1.5+(height*0.1))
+
+        self.update_left()
+
+        self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1], self.left_pose[2]+0.15,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5]-0.2)
+
+        self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1], self.left_pose[2]-0.15,
+        self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.2)
+
+        names = self.left_interface.joint_names()
+        angles = self.left_interface.joint_angles()
+        main = dict(angles)
+        leftpos = main["left_w2"]
+        leftpos = leftpos + (1.4+(height*0.2))
         main["left_w2"] = leftpos
         self.left_interface.move_to_joint_positions(main)
+
+        self.update_left()
 
         #self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2]+0.04+(height*0.01),
         #self.left_pose[3],self.left_pose[4],self.left_pose[5])
@@ -527,7 +558,7 @@ class locateAndMove():
 
         self.left_interface.set_joint_position_speed(0.1)
 
-        self.move_and_rotate("left", 0.59, pagey+0.3, self.left_pose[2],
+        self.move_and_rotate("left", 0.59, pagey+0.4, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.15,
@@ -715,10 +746,6 @@ if __name__ == '__main__':
     rospy.Subscriber("/robot/end_effector/right_gripper/state", EndEffectorState, gripperholding)
 
     move = locateAndMove()
-    #move.print_arm_pose()
-
-
-
 
     while True:
         #string = move.wait_for_person()
@@ -811,7 +838,7 @@ if __name__ == '__main__':
             move.moveToSweets()
             string = move.reset_sweets()
 
-            num, centres, anglelist = move.get_sweet_client()
+            num, centres, anglelist, page = move.get_sweet_client()
             print str(redGiven)," red sweets have been given to the customer"
 
         global greenGiven
@@ -835,7 +862,7 @@ if __name__ == '__main__':
             move.moveToSweets()
             string = move.reset_sweets()
 
-            num, centres, anglelist = move.get_sweet_client()
+            num, centres, anglelist, page = move.get_sweet_client()
             print str(greenGiven)," green sweets have been given to the customer"
 
         global blueGiven

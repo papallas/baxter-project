@@ -5,8 +5,6 @@
 
 # data for green sweets
 # 1,46,61,0,106,198,218,5
-#The structure of this file was taken from the baxter_stocking_stuffer project by students in Northwestern's MSR program - Josh Marino, Sabeen Admani, Andrew Turchina and Chu-Chu Igbokwe
-# Message published - opencv/center_of_object - contains x,y,z coordinates as a Point message
 
 import rospy
 import numpy as np
@@ -39,6 +37,8 @@ backgroundImage = 0
 
 global totalSweets
 global centrelist
+global PAGECENTREPOINT
+PAGECENTREPOINT = 0
 
 # RED, GREEN, BLUE
 global colourAmounts
@@ -50,14 +50,14 @@ global enableAnalyse
 enableAnalyse = True
 
 global pointlist
-# global collisionslist
-# global totalCollisions
-#
-# global collisions
-# collisions = "False"
-# global collisionslist
+global tl
 
 global anglelist
+
+global pageCentre
+
+global sweetMask
+sweetMask = "nil"
 
 #Thresholds image and stores position of object in (x,y) coordinates of the camera's frame, with origin at center.
 def callback(message):
@@ -69,204 +69,173 @@ def callback(message):
     # Take each frame
     simg = cv2.GaussianBlur(cv_image,(5,5),0)
 
-    # initialize the colors dictionary, containing the color
-    # name as the key and the RGB tuple as the value
-    colors = OrderedDict({
-    	"green": (130.68058107082402, 126.18073194402548, 91.24113616607778),
-    	"blue": (167.21600854233967, 113.0324141733287, 81.47253859404914),
-        "red": (121.55769231718531, 102.44336928332095, 116.87984092454667)})
-
-    # allocate memory for the L*a*b* image, then initialize
-    # the color names list
-    lab = np.zeros((len(colors), 1, 3), dtype="uint8")
-    colorNames = []
-
-    # loop over the colors dictionary
-    for (i, (name, rgb)) in enumerate(colors.items()):
-    	# update the L*a*b* array and the color names list
-    	lab[i] = rgb
-    	colorNames.append(name)
-
-    # convert the L*a*b* array from the RGB color space
-    # to L*a*b*
-    # lab = cv2.cvtColor(lab, cv2.COLOR_RGB2LAB)
-
-    # lab = []
-    # lab.append([[0, 128, 128]])
-    # lab.append([[0, -128, 128]])
-    # lab.append([[0, 128, -128]])
+    global PAGECENTREPOINT
 
     if enableAnalyse == True:
         # print lab
+        tl = tf.TransformListener()
+
+        try:
+            tl.waitForTransform("right_hand_camera", "torso", rospy.Time(0), rospy.Duration(10))
+            # (trans,rot) = tl.lookupTransform('right_hand_camera', 'torso', rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            pass
 
         # find sweet rectangular area for sweets
-        global sweetarea
-        global foundsquare
+        global sweetarea, foundsquare, pageCentre, tl, sweetMask
         foundsquare = False
-        sweetarea, areafound = find_background(simg)
-        print "Finding sweet area"
+        if (sweetMask == "nil"):
+            sweetMask, areafound = find_background(simg)
+            print "Finding sweet area"
 
         #with open('colours.data', 'a') as file:
 
-        if foundsquare == True:
-            # Convert BGR to HS
-            circleimg = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2GRAY);
+        # Convert BGR to HS
+        sweetarea = cv2.bitwise_and(simg, simg, mask=sweetMask)
 
-            cvimagelab = cv2.cvtColor(cv_image, cv2.COLOR_BGR2LAB);
+        cv2.imshow("sweetMask", sweetArea)
 
-            edges = cv2.Canny(circleimg,50,200,apertureSize = 3)
+        circleimg = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2GRAY);
 
-            kernel = np.ones((5,5),np.uint8)
-            dilation = cv2.dilate(edges,kernel,iterations = 1)
+        edges = cv2.Canny(circleimg,50,200,apertureSize = 3)
 
-            contours,hier = cv2.findContours(dilation,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-            #cv2.drawContours(cv_image, contours, -1, (255,0,0), 3)
+        kernel = np.ones((5,5),np.uint8)
+        #dilation = cv2.dilate(edges,kernel,iterations = 1)
 
-            mask = np.zeros(circleimg.shape,dtype="uint8")
-            centrepoints = []
-            for cont in contours:
-                area = cv2.contourArea(cont)
-                # cut out large border of page contours
-                if area < 50000:
-                    cv2.drawContours(mask, [cont], -1, 255, -1)
+        #cv2.imshow("dilated image", dilation)
 
-                    # cv2.drawContours(mask, [cont], -1, (255,255,255), 3)
+        #dilation2 = dilation
 
-            newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-            # cv2.drawContours(cv_image, newcontours, -1, (255,0,0), 3)
+        contours,hier = cv2.findContours(edges,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+        #cv2.drawContours(cv_image, contours, -1, (255,0,0), 3)
 
-            global colourAmounts
-            colourAmounts = [0,0,0]
+        mask = np.zeros(circleimg.shape,dtype="uint8")
+        centrepoints = []
+        for cont in contours:
+            area = cv2.contourArea(cont)
+            # cut out large border of page contours
+            if area < 50000:
+                cv2.drawContours(mask, [cont], -1, 255, -1)
 
-            redcentres = []
-            greencentres = []
-            bluecentres = []
-            redangles = []
-            greenangles = []
-            blueangles = []
+        mask2 = cv2.erode(mask, None, iterations=1)
 
-            greenWeights = np.array([366.1219, -463.8519, 63.0028, 8.5000])
+        cv2.imshow("ERODED MASK",mask2)
 
-            blueWeights = np.array([-42.2808, 25.3629, 30.6613, 6.7000])
+        mask = mask2
 
-            redWeights = np.array([3.4025, 11.9616, -17.8766, 6.9000])
+        newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        # cv2.drawContours(cv_image, newcontours, -1, (255,0,0), 3)
 
-            for cont in newcontours:
-                area = cv2.contourArea(cont)
-                # cut out large border of page contours
-                # print area
-                if area < 1900:
-                    newmask = np.zeros(circleimg.shape,dtype="uint8")
-                    cv2.drawContours(newmask, [cont], -1, 255, -1)
+        global colourAmounts
+        colourAmounts = [0,0,0]
 
-                    newmask = cv2.erode(newmask, None, iterations=1)
-                    mean = cv2.mean(cv_image, mask=newmask)[:3]
+        redcentres = []
+        greencentres = []
+        bluecentres = []
+        redangles = []
+        greenangles = []
+        blueangles = []
 
-                    meanarray = np.array([mean[0], mean[1], mean[2], 1])
+        greenWeights = np.array([366.1219, -463.8519, 63.0028, 8.5000])
 
-                    # string = str(mean[0])+", "+str(mean[1])+", "+str(mean[2])+", "+"pink\n"
-                    # file.write(string)
+        blueWeights = np.array([-42.2808, 25.3629, 30.6613, 6.7000])
 
-                    #initialize the minimum distance found thus far
-                    minDist = (np.inf, None)
+        redWeights = np.array([3.4025, 11.9616, -17.8766, 6.9000])
 
-                    # loop over the known L*a*b* color values
-                    for (i, row) in enumerate(lab):
-                        # compute the distance between the current L*a*b*
-                        # color value and the mean of the image
-                        # d = dist.euclidean(row[0], mean)
-                        d = np.linalg.norm(mean-row[0])
+        for cont in newcontours:
+            area = cv2.contourArea(cont)
+            # cut out large border of page contours
+            # print area
+            if 500 < area < 1900:
+                newmask = np.zeros(circleimg.shape,dtype="uint8")
+                cv2.drawContours(newmask, [cont], -1, 255, -1)
 
-                        # if the distance is smaller than the current distance,
-                        # then update the bookkeeping variable
-                        if d < minDist[0]:
-                        	minDist = (d, i)
+                newmask = cv2.erode(newmask, None, iterations=1)
+                mean = cv2.mean(cv_image, mask=newmask)[:3]
 
-                    rows,cols = cv_image.shape[:2]
-                    [vx,vy,x,y] = cv2.fitLine(cont, cv2.cv.CV_DIST_L2,0,0.01,0.01)
-                    lefty = int((-x*vy/vx) + y)
-                    righty = int(((cols-x)*vy/vx)+y)
-                    M = cv2.moments(cont)
-                    cx = int(M['m10']/M['m00'])
-                    cy = int(M['m01']/M['m00'])
+                meanarray = np.array([mean[0], mean[1], mean[2], 1])
 
-                    if np.dot(redWeights,meanarray) < 0:
-                        #print "This is red"
-                        cv2.drawContours(cv_image, [cont], -1, (0,0,255), 3)
-                        colourAmounts[0] = colourAmounts[0] + 1
-                        redangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                        redcentres.append((cx, cy))
+                rows,cols = cv_image.shape[:2]
+                [vx,vy,x,y] = cv2.fitLine(cont, cv2.cv.CV_DIST_L2,0,0.01,0.01)
+                lefty = int((-x*vy/vx) + y)
+                righty = int(((cols-x)*vy/vx)+y)
+                M = cv2.moments(cont)
+                cx = int(M['m10']/M['m00'])
+                cy = int(M['m01']/M['m00'])
 
-                    elif np.dot(greenWeights,meanarray) < 0:
-                        #print "This is green"
-                        cv2.drawContours(cv_image, [cont], -1, (0,255,0), 3)
-                        colourAmounts[1] = colourAmounts[1] + 1
-                        greenangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                        greencentres.append((cx, cy))
+                if np.dot(redWeights,meanarray) < 0:
+                    #print "This is red"
+                    cv2.drawContours(cv_image, [cont], -1, (0,0,255), 3)
+                    colourAmounts[0] = colourAmounts[0] + 1
+                    redangles.append(math.atan2(righty - lefty, cols-1 - 0))
+                    redcentres.append((cx, cy))
 
-                    elif np.dot(blueWeights,meanarray) < 0:
-                        #print "This is blue"
-                        cv2.drawContours(cv_image, [cont], -1, (255,0,0), 3)
-                        colourAmounts[2] = colourAmounts[2] + 1
-                        blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                        bluecentres.append((cx, cy))
+                elif np.dot(greenWeights,meanarray) < 0:
+                    #print "This is green"
+                    cv2.drawContours(cv_image, [cont], -1, (0,255,0), 3)
+                    colourAmounts[1] = colourAmounts[1] + 1
+                    greenangles.append(math.atan2(righty - lefty, cols-1 - 0))
+                    greencentres.append((cx, cy))
 
-            centres = []
-            angles = []
+                elif np.dot(blueWeights,meanarray) < 0:
+                    #print "This is blue"
+                    cv2.drawContours(cv_image, [cont], -1, (255,0,0), 3)
+                    colourAmounts[2] = colourAmounts[2] + 1
+                    blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
+                    bluecentres.append((cx, cy))
 
-            for i in range(0,len(redcentres)):
-                centres.append(redcentres[i])
-                angles.append(redangles[i])
-            for i in range(0,len(greencentres)):
-                centres.append(greencentres[i])
-                angles.append(greenangles[i])
-            for i in range(0,len(bluecentres)):
-                centres.append(bluecentres[i])
-                angles.append(blueangles[i])
+        centres = []
+        angles = []
 
-            cv2.imshow("IMAGE",cv_image)
+        for i in range(0,len(redcentres)):
+            centres.append(redcentres[i])
+            angles.append(redangles[i])
+        for i in range(0,len(greencentres)):
+            centres.append(greencentres[i])
+            angles.append(greenangles[i])
+        for i in range(0,len(bluecentres)):
+            centres.append(bluecentres[i])
+            angles.append(blueangles[i])
 
-            global enableAnalyse
-            enableAnalyse = False
+        cv2.imshow("IMAGE",cv_image)
 
-            overallcentres = centres
-            centrepoints = []
-            for centre in overallcentres:
-                [x, y] = pixel_to_baxter(centre[0], centre[1])
-                #newcoords.append((x,y))
-                point = PointStamped()
-                point.header.frame_id = "right_hand_camera"
-                point.point.x = x
-                point.point.y = y
-                point.point.z = 0.45
-                centrepoints.append(point)
+        global enableAnalyse
+        enableAnalyse = False
 
-            tl = tf.TransformListener()
+        overallcentres = centres
+        centrepoints = []
+        for centre in overallcentres:
+            [x, y] = pixel_to_baxter(centre[0], centre[1])
+            #newcoords.append((x,y))
+            point = PointStamped()
+            point.header.frame_id = "right_hand_camera"
+            point.point.x = x
+            point.point.y = y
+            point.point.z = 0.45
+            centrepoints.append(point)
 
-            try:
-                tl.waitForTransform("right_hand_camera", "torso", rospy.Time(0), rospy.Duration(10))
-                # (trans,rot) = tl.lookupTransform('right_hand_camera', 'torso', rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                pass
-
-            global pointlist
-            pointlist = []
-            # global collisionslist
-            # collisionslist = []
-            global anglelist
-            anglelist = []
+        global pointlist
+        pointlist = []
+        # global collisionslist
+        # collisionslist = []
+        global anglelist
+        anglelist = []
 
 
-            for i in range(0,len(centrepoints)):
-                newpoint = tl.transformPoint("torso", centrepoints[i])
-                pointlist.append(newpoint)
-                anglelist.append(angles[i])
+        for i in range(0,len(centrepoints)):
+            newpoint = tl.transformPoint("torso", centrepoints[i])
+            pointlist.append(newpoint)
+            anglelist.append(angles[i])
 
-            print anglelist
+        print anglelist
 
     k = cv2.waitKey(1)
     global enableAnalyse
     enableAnalyse = False
+
+
+    pub = rospy.Publisher("pageCenre", PointStamped, queue_size=10)
+    pub.publish(PAGECENTREPOINT)
 
 
 
@@ -282,25 +251,40 @@ def find_background(img):
     cns = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
     mask = np.zeros(img.shape[:2], dtype="uint8") * 25
 
-    global foundsquare
+    global foundsquare, pageCentre, tl, PAGECENTREPOINT
+
     foundsquare = False
     # FIND RECTANGLE IN IMAGE AND SEGMENT - WHAT IF MULTIPLE RECTANGLES?
     for cont in cns:
         peri = cv2.arcLength(cont, True)
         approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
         if len(approx) == 4:
-            foundsquare = True
-            cv2.drawContours(mask, [cont], -1, 1, -1)
-            # DRAW CONTOURS TO IMAGE
-            # cv2.drawContours(img, cont, -1, (0, 255, 0), 3)
-            break
+            if cv2.contourArea(cont) > 70000:
+                foundsquare = True
+                cv2.drawContours(mask, [cont], -1, 1, -1)
 
-    img = cv2.bitwise_and(img, img, mask=mask)
+                M = cv2.moments(cont)
+                cx = int(M['m10']/M['m00'])
+                cy = int(M['m01']/M['m00'])
+                [x, y] = pixel_to_baxter(cx, cy)
+                #newcoords.append((x,y))
+                point = PointStamped()
+                point.header.frame_id = "right_hand_camera"
+                point.point.x = x
+                point.point.y = y
+                point.point.z = 0.45
+                PAGECENTREPOINT = tl.transformPoint("torso", point)
+                pageCentre = [PAGECENTREPOINT.point.x, PAGECENTREPOINT.point.y, PAGECENTREPOINT.point.z]
+                break
+
+    #img = cv2.bitwise_and(img, img, mask=mask)
+
+    #cv2.imshow("squarefound", img)
 
     if (foundsquare == False):
         print "sweet area is not found"
 
-    return img, foundsquare
+    return mask, foundsquare
 
 def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
     lower = np.array([r1,g1,b1])
@@ -317,31 +301,11 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
     contour,hier = cv2.findContours(mask2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
     sweetCount = 0
-    # collisionCount = 0
     sweetcontours = []
     sweetcentres = []
-    # collisioncontours = []
-    # collisionCentres = []
 
     global collisions
     collisions = "False"
-
-    # for cnt in contour:
-    #     if (cv2.contourArea(cnt) > area):
-    #         if cv2.contourArea(cnt) > 1500:
-    #             global collisions
-    #             collisions = "True"
-    #
-    # for cnt in contour:
-    #     if (cv2.contourArea(cnt) > area):
-    #         if cv2.contourArea(cnt) > 1500:
-    #             cv2.drawContours(mask2, [cnt], 0, 255, 3)
-    #             collisioncontours.append(cnt)
-    #             collisionCount = collisionCount + 1
-    #             M = cv2.moments(cnt)
-    #             cx = int(M['m10']/M['m00'])
-    #             cy = int(M['m01']/M['m00'])
-    #             collisionCentres.append((cx, cy))
 
     sweetangles = []
 
@@ -367,7 +331,7 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
     print "There are "+str(sweetCount)+" "+colour+" sweets"
 
 
-    #cv2.imshow("bluemask", mask2)
+    cv2.imshow("bluemask", mask2)
 
     # return mask2, sweetcontours, sweetCount, sweetcentres, collisioncontours, collisionCount, collisionCentres, sweetangles
 
@@ -402,12 +366,7 @@ def pixel_to_baxter(imagex, imagey):
 
 def publish_sweet_handle(req):
     print "request has string "+req.A
-    global centrelist
-    global colourAmounts
-    global pointlist
-    # global collisions
-    # global collisionslist
-    # global totalCollisions
+    global centrelist, colourAmounts, pointlist, pageCentre
     global anglelist
     centrelist = []
     # collisionCentre = []
@@ -416,13 +375,13 @@ def publish_sweet_handle(req):
         centrelist.append(pointlist[i].point.y)
         centrelist.append(pointlist[i].point.z)
     print colourAmounts
-    return RequestSweetInfoResponse(colourAmounts, centrelist, anglelist)
+    return RequestSweetInfoResponse(colourAmounts, centrelist, anglelist, pageCentre)
 
 def handle_reset_sweets(req):
     print "Returning ",req.reset
     global enableAnalyse
     # rospy.sleep(4)
-    rospy.sleep(1)
+    rospy.sleep(2)
     enableAnalyse = True
     while enableAnalyse == True:
         rospy.sleep(1)
