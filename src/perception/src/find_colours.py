@@ -93,20 +93,20 @@ def callback(message):
         # Convert BGR to HS
         sweetarea = cv2.bitwise_and(simg, simg, mask=sweetMask)
 
-        cv2.imshow("sweetMask", sweetArea)
+        #cv2.imshow("sweetMask", sweetarea)
 
         circleimg = cv2.cvtColor(sweetarea, cv2.COLOR_BGR2GRAY);
 
         edges = cv2.Canny(circleimg,50,200,apertureSize = 3)
 
         kernel = np.ones((5,5),np.uint8)
-        #dilation = cv2.dilate(edges,kernel,iterations = 1)
+        dilation = cv2.dilate(edges,kernel,iterations = 1)
 
         #cv2.imshow("dilated image", dilation)
 
-        #dilation2 = dilation
+        dilation2 = dilation
 
-        contours,hier = cv2.findContours(edges,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+        contours,hier = cv2.findContours(dilation,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
         #cv2.drawContours(cv_image, contours, -1, (255,0,0), 3)
 
         mask = np.zeros(circleimg.shape,dtype="uint8")
@@ -119,9 +119,11 @@ def callback(message):
 
         mask2 = cv2.erode(mask, None, iterations=1)
 
-        cv2.imshow("ERODED MASK",mask2)
+        #cv2.imshow("ERODED MASK",mask2)
 
         mask = mask2
+
+        cv2.imshow("MASK 2", mask2)
 
         newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         # cv2.drawContours(cv_image, newcontours, -1, (255,0,0), 3)
@@ -142,11 +144,203 @@ def callback(message):
 
         redWeights = np.array([3.4025, 11.9616, -17.8766, 6.9000])
 
+
+
+        overallmask = np.zeros(circleimg.shape,dtype="uint8")
+
+        extracontours = []
+        for cont in newcontours:
+            area = cv2.contourArea(cont)
+            # PROCESSING COLLISION TYPES
+            if 1500 < area:
+                print area
+
+                print "Collision area: ",area
+                #peri = cv2.arcLength(cont, True)
+                #approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
+
+                rect = cv2.minAreaRect(cont)
+                box = cv2.cv.BoxPoints(rect)
+                box = np.int0(box)
+
+                x,y,w,h = cv2.boundingRect(cont)
+                #cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+
+                #print rect[1][0]
+                print "Box width = ",rect[1][0],", box height = ",rect[1][1]
+
+                #cv2.drawContours(cv_image,[newbox],0,(0,255,0),3)
+
+
+                collisionmask = np.zeros(circleimg.shape,dtype="uint8")
+                #cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
+                cv2.rectangle(cv_image,(x,y),(x+w,y+h),(0,255,0),2)
+
+                kernel1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20))
+
+                #kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 5))
+                morph = cv2.morphologyEx(mask2, cv2.MORPH_OPEN, kernel1)
+
+                #morph = cv2.morphologyEx(morph, cv2.MORPH_GRADIENT, kernel2)
+                dist = cv2.distanceTransform(morph, cv2.cv.CV_DIST_L2, cv2.cv.CV_DIST_MASK_PRECISE)
+
+                cv2.imshow('dist', dist)
+
+                borderSize = 50
+                distborder = cv2.copyMakeBorder(dist, borderSize, borderSize, borderSize, borderSize,
+                                                cv2.BORDER_CONSTANT | cv2.BORDER_ISOLATED, 0)
+                gap = 10
+                kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (50, 30))
+                kernel2 = cv2.copyMakeBorder(kernel2, gap, gap, gap, gap,
+                                                cv2.BORDER_CONSTANT | cv2.BORDER_ISOLATED, 0)
+                distTempl = cv2.distanceTransform(kernel2, cv2.cv.CV_DIST_L2, cv2.cv.CV_DIST_MASK_PRECISE)
+                cv2.imshow('disttempl', distTempl)
+
+                nxcor = cv2.matchTemplate(distborder, distTempl, cv2.TM_CCOEFF_NORMED)
+                mn, mx, _, _ = cv2.minMaxLoc(nxcor)
+                th, peaks = cv2.threshold(nxcor, mx*0.5, 255, cv2.THRESH_BINARY)
+                peaks8u = cv2.convertScaleAbs(peaks)
+                contours, hierarchy = cv2.findContours(peaks8u, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+                peaks8u = cv2.convertScaleAbs(peaks)    # to use as mask
+                for i in range(len(contours)):
+                    x, y, w, h = cv2.boundingRect(contours[i])
+                    _, mx, _, mxloc = cv2.minMaxLoc(dist[y:y+h, x:x+w], peaks8u[y:y+h, x:x+w])
+                    cv2.circle(cv_image, (int(mxloc[0]+x), int(mxloc[1]+y)), int(mx), (255, 0, 0), 2)
+                    cv2.rectangle(cv_image, (x, y), (x+w, y+h), (0, 255, 255), 2)
+                    cv2.drawContours(cv_image, contours, i, (0, 0, 255), 2)
+
+                cv2.imshow('circles', cv_image)
+
+
+        #newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+        #         gap = 20
+        #
+        #         width = 0
+        #         height = 0
+        #         if rect[1][0] < rect[1][1]:
+        #             width = rect[1][0]
+        #             height = rect[1][1]
+        #         # if rect[1][0] > rect[1][1]:
+        #         #     longside = rect[1][0]
+        #         #     shortside = rect[1][1]
+        #
+        #             newrect = ((rect[0][0]+width/2+gap, rect[0][1]), (rect[1][0], height/2), rect[2])
+        #             newbox = cv2.cv.BoxPoints(newrect)
+        #             newbox = np.int0(newbox)
+        #
+        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
+        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
+        #
+        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
+        #
+        #
+        #             overallmask = overallmask + collisionmask
+        #
+        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
+        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
+        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #             for i in range(0,len(contours)):
+        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
+        #                     extracontours.append(contours[i])
+        #
+        #             newrect = ((rect[0][0]-width/2-gap, rect[0][1]), (rect[1][0], height/2), rect[2])
+        #             newbox = cv2.cv.BoxPoints(newrect)
+        #             newbox = np.int0(newbox)
+        #
+        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
+        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
+        #
+        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
+        #
+        #
+        #             overallmask = overallmask + collisionmask
+        #
+        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
+        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
+        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #             for i in range(0,len(contours)):
+        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
+        #                     extracontours.append(contours[i])
+        #
+        #
+        #         if rect[1][0] > rect[1][1]:
+        #             width = rect[1][0]
+        #             height = rect[1][1]
+        #         # if rect[1][0] > rect[1][1]:
+        #         #     longside = rect[1][0]
+        #         #     shortside = rect[1][1]
+        #
+        #             #rect.center.y = rect[0][1] + height/2
+        #             #rect.set_width(width/2)
+        #             newrect = ((rect[0][0], rect[0][1]+height/2+gap), (width/2, rect[1][1]), rect[2])
+        #             newbox = cv2.cv.BoxPoints(newrect)
+        #             newbox = np.int0(newbox)
+        #
+        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
+        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
+        #
+        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
+        #
+        #             overallmask = overallmask + collisionmask
+        #
+        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
+        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
+        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #             for i in range(0,len(contours)):
+        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
+        #                     extracontours.append(contours[i])
+        #
+        #             newrect = ((rect[0][0], rect[0][1]-height/2-gap), (width/2, rect[1][1]), rect[2])
+        #             newbox = cv2.cv.BoxPoints(newrect)
+        #             newbox = np.int0(newbox)
+        #
+        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
+        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
+        #
+        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
+        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
+        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #             cv2.imshow("contourdilation", dilation)
+        #
+        #             for i in range(0,len(contours)):
+        #                 print (cv2.contourArea(contours[i]))
+        #                 print (cv2.arcLength(contours[i], True))
+        #
+        #                 #if cv2.contourArea(contours[i]) > 30:
+        #                 #    extracontours.append(contours[i])
+        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
+        #                     extracontours.append(contours[i])
+        #
+        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
+        #
+        #
+        #             overallmask = overallmask + collisionmask
+        #
+        # for i in range(0,len(extracontours)):
+        #     newcontours.append(extracontours[i])
+
+
         for cont in newcontours:
             area = cv2.contourArea(cont)
             # cut out large border of page contours
-            # print area
-            if 500 < area < 1900:
+            #print area
+
+            if 500 < area < 1500:
+                print "Sweet area: ",area
+
                 newmask = np.zeros(circleimg.shape,dtype="uint8")
                 cv2.drawContours(newmask, [cont], -1, 255, -1)
 
@@ -183,6 +377,22 @@ def callback(message):
                     colourAmounts[2] = colourAmounts[2] + 1
                     blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
                     bluecentres.append((cx, cy))
+
+
+
+                print rect
+
+
+
+                #cv2.drawContours(cv_image,[box],0,(0,0,255),2)
+
+                #cv2.drawContours(cv_image, [approx], -1, (0,0,0), 3)
+
+        collisionimage = cv2.bitwise_and(simg, simg, mask=overallmask)
+        for i in range(0,len(extracontours)):
+            cv2.drawContours(collisionimage, [extracontours[i]], -1, (255,0,0), 3)
+        cv2.imshow("CONTOUR IMAGE: ", collisionimage)
+
 
         centres = []
         angles = []
@@ -258,6 +468,7 @@ def find_background(img):
     for cont in cns:
         peri = cv2.arcLength(cont, True)
         approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
+        #cv2.drawContours(img, [cont], -1, (255,0,0), 3)
         if len(approx) == 4:
             if cv2.contourArea(cont) > 70000:
                 foundsquare = True
@@ -275,11 +486,11 @@ def find_background(img):
                 point.point.z = 0.45
                 PAGECENTREPOINT = tl.transformPoint("torso", point)
                 pageCentre = [PAGECENTREPOINT.point.x, PAGECENTREPOINT.point.y, PAGECENTREPOINT.point.z]
-                break
+                print cv2.contourArea(cont)
 
     #img = cv2.bitwise_and(img, img, mask=mask)
 
-    #cv2.imshow("squarefound", img)
+    #cv2.imshow("squarecontours", img)
 
     if (foundsquare == False):
         print "sweet area is not found"
@@ -331,7 +542,7 @@ def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
     print "There are "+str(sweetCount)+" "+colour+" sweets"
 
 
-    cv2.imshow("bluemask", mask2)
+    #cv2.imshow("bluemask", mask2)
 
     # return mask2, sweetcontours, sweetCount, sweetcentres, collisioncontours, collisionCount, collisionCentres, sweetangles
 
