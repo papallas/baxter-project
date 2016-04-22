@@ -1,0 +1,51 @@
+\documentclass[12pt,a4paper,twoside]{book}
+\usepackage{pgfgantt}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}	
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{lipsum}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{cleveref}
+\setcounter{secnumdepth}{3} 
+\setcounter{tocdepth}{3}
+% only chapter and sections will be numbered
+%\setcounter{secnumdepth}{3} % default value for 'report' class is "2"
+
+
+%\floatstyle{boxed} 
+\restylefloat{figure}
+
+
+\setlength{\textfloatsep}{5pt plus 1.0pt minus 2.0pt}
+
+%include the configuration file for layout
+%Have a look in this file it has some useful commands defined
+\input{config.tex}
+
+\begin{document}
+%The prelude is everything upto the start of chapter 1
+\include{prelude}
+\let\cleardoublepage\clearpage
+
+%include as many chapters as you have.
+%the chapters are in a directory called Chapters
+\include{./Chapters/chapter0}
+\include{./Chapters/chapter2}
+\include{./Chapters/chapter1}
+\include{./Chapters/chapter3}
+\include{./Chapters/chapter4}
+
+%Adds References to the table of content
+%all you bibtex enteries go in the file called refs.bib
+\addcontentsline{toc}{chapter}{References}
+\nocite{*}
+\bibliography{refs}
+
+%any appendices you have go in a file called appendix.
+\include{appendix}
+\end{document}
+
