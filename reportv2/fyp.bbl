@@ -1,0 +1,38 @@
+\begin{thebibliography}{1}
+
+\bibitem{reliablegrasping}
+M.~Ciocarlie, K.~Hsiao, E.~G. Jones, S.~Chitta, R.~B. Rusu, and I.~A.
+  {\c{S}}ucan.
+\newblock {\em Experimental Robotics: The 12th International Symposium on
+  Experimental Robotics}, chapter Towards Reliable Grasping and Manipulation in
+  Household Environments, pages 241--252.
+\newblock Springer Berlin Heidelberg, Berlin, Heidelberg, 2014.
+
+\bibitem{objectlabelling}
+K.~Lai, L.~Bo, X.~Ren, and D.~Fox.
+\newblock Detection-based object labeling in 3d scenes.
+\newblock In {\em Robotics and Automation (ICRA), 2012 IEEE International
+  Conference on}, pages 1330--1337, May 2012.
+
+\bibitem{kinectfusion}
+R.~A. Newcombe, S.~Izadi, O.~Hilliges, D.~Molyneaux, D.~Kim, A.~J. Davison,
+  P.~Kohi, J.~Shotton, S.~Hodges, and A.~Fitzgibbon.
+\newblock Kinectfusion: Real-time dense surface mapping and tracking.
+\newblock In {\em Mixed and Augmented Reality (ISMAR), 2011 10th IEEE
+  International Symposium on}, pages 127--136, Oct 2011.
+
+\bibitem{herbrobot}
+S.~S. Srinivasa, D.~Berenson, M.~Cakmak, A.~Collet, M.~R. Dogar, A.~D. Dragan,
+  R.~A. Knepper, T.~Niemueller, K.~Strabala, M.~V. Weghe, and J.~Ziegler.
+\newblock Herb 2.0: Lessons learned from developing a mobile manipulator for
+  the home.
+\newblock {\em Proceedings of the IEEE}, 100(8):2410--2428, Aug 2012.
+
+\bibitem{6222306}
+S.~S. Srinivasa, D.~Berenson, M.~Cakmak, A.~Collet, M.~R. Dogar, A.~D. Dragan,
+  R.~A. Knepper, T.~Niemueller, K.~Strabala, M.~V. Weghe, and J.~Ziegler.
+\newblock Herb 2.0: Lessons learned from developing a mobile manipulator for
+  the home.
+\newblock {\em Proceedings of the IEEE}, 100(8):2410--2428, Aug 2012.
+
+\end{thebibliography}
