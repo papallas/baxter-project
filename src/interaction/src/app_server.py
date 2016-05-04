@@ -33,9 +33,8 @@ class Server:
             iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
             if iface != None:
                 for j in iface:
-                    print "Please enter the following IP address"
-                    print j['addr']
                     mainaddr = j['addr']
+        print "\n\nPlease enter the following IP address into the android app:", mainaddr,"\n"
         s.close()
 
         # Using a generic port number
@@ -49,8 +48,6 @@ class Server:
 
         # Listen for up to 1 device to connect at once
         self.serversocket.listen(1)
-        print "Server now listening"
-
 
     def wait_for_connection(self):
         # If there are no connections to the server, wait for a client
@@ -58,7 +55,7 @@ class Server:
         if self.connection == False:
             self.conn, addr = self.serversocket.accept()
             self.connection = True
-            print "Connected to client"
+            #print "Connected to client"
 
     def get_sweet_command(self):
         if self.connection == True and self.sendData == True:
@@ -105,6 +102,7 @@ class Server:
 # MAIN ROSPY LOOP
 if __name__ == '__main__':
     # Create the server object
+    rospy.sleep(15)
     server = Server()
 
     # Initialise the app server node

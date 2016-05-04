@@ -119,11 +119,30 @@ def callback(message):
 
         mask2 = cv2.erode(mask, None, iterations=1)
 
+
+        newimage = cv2.bitwise_and(cv_image, cv_image, mask=mask2)
+
+
         #cv2.imshow("ERODED MASK",mask2)
 
         mask = mask2
 
-        cv2.imshow("MASK 2", mask2)
+
+        template = cv2.imread('redtemplate.png',1)
+        template = cv2.GaussianBlur(template,(5,5),0)
+
+        #cv2.imshow("NEW TEMPLATE", template)
+        #
+        # # w, h = template.shape[::-1]
+        # #
+        # #
+        # res = cv2.matchTemplate(newimage,template,cv2.TM_CCOEFF_NORMED)
+        # threshold = 0.5
+        # loc = np.where( res >= threshold)
+        # for pt in zip(*loc[::-1]):
+        #     cv2.rectangle(newimage, pt, (pt[0] + 25, pt[1] + 40), (0,0,255), 2)
+        # cv2.imshow("NEW IMAGE", newimage)
+
 
         newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         # cv2.drawContours(cv_image, newcontours, -1, (255,0,0), 3)
@@ -143,195 +162,307 @@ def callback(message):
         blueWeights = np.array([-42.2808, 25.3629, 30.6613, 6.7000])
 
         redWeights = np.array([3.4025, 11.9616, -17.8766, 6.9000])
-
+#
+#         greenWeights =
+#
+#     3.6199    2.4227    0.4625   -1.6000
+#
+#
+# blueWeights =
+#
+#     2.8218   -0.1808    0.1987   -0.3500
+#
+#
+# redWeights =
+#
+#    -1.0449    8.2916    2.2499   -2.9000
 
 
         overallmask = np.zeros(circleimg.shape,dtype="uint8")
 
+        collisionContours = []
+
         extracontours = []
-        for cont in newcontours:
-            area = cv2.contourArea(cont)
-            # PROCESSING COLLISION TYPES
-            if 1500 < area:
-                print area
+        splitcontours = []
+        collisionNum = 0
+        # for cont in newcontours:
+        #     area = cv2.contourArea(cont)
+        #
+        #     # PROCESSING COLLISION TYPES
+        #     if 1500 < area:
+        #         #print area
+        #
+        #         print "Collision area: ",area, ", collision number: ",collisionNum
+        #         peri = cv2.arcLength(cont, True)
+        #         approx = cv2.approxPolyDP(cont, 0.025 * peri, False)
+        #         #cv2.drawContours(cv_image, [approx], -1, (0,0,0), 3)
+        #
+        #         x,y,w,h = cv2.boundingRect(cont)
+        #         #cv2.rectangle(cv_image,(x,y),(x+w,y+h),(0,255,0),2)
+        #
+        #         size = 12
+        #         a = 0
+        #         b = 0
+        #         #print "square number across: ",math.ceil(w/size)
+        #         colnum = math.ceil(w/size)+1
+        #         rownum = math.ceil(h/size)+1
+        #
+        #         #print "rows: ", rownum, ", height: ", colnum
+        #
+        #         COLORMATRIX = np.zeros((rownum, colnum))
+        #         for i in range(x, x+w, size):
+        #             for j in range(y, y+h, size):
+        #                 #cv2.rectangle(cv_image,(i,j),(i+10,j+10),(0,255,0),2)
+        #                 #print a
+        #
+        #                 rectmask = np.zeros(circleimg.shape,dtype="uint8")
+        #                 cv2.rectangle(rectmask,(i,j),(i+size,j+size),(255,255,255),-1)
+        #
+        #                 colourimage = cv2.bitwise_and(cv_image, cv_image, mask=rectmask)
+        #
+        #                 cv2.imshow("masked mask2 ",colourimage)
+        #
+        #                 ret,thresh5 = cv2.threshold(colourimage,127,255,cv2.THRESH_TOZERO_INV)
+        #                 edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #                 dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #                 contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #
+        #                 for k in range(0,len(contours)):
+        #                     #if 50 < (cv2.arcLength(contours[i], True)) < 300:
+        #                     #cv2.drawContours(cv_image, [contours[k]], -1, (0,0,0), 2)
+        #
+        #                     contmask = np.zeros(circleimg.shape,dtype="uint8")
+        #                     cv2.drawContours(contmask, [contours[k]], -1, 1, -1)
+        #
+        #
+        #                     mean = cv2.mean(cv_image, mask=contmask)[:3]
+        #                     meanarray = np.array([mean[0], mean[1], mean[2], 1])
+        #
+        #                     #cv2.rectangle(cv_image,(i,j),(i+size,j+size),(0,0,255),2)
+        #
+        #                     if np.dot(greenWeights,meanarray) < 0:
+        #                         #print "This is green"
+        #                         #cv2.drawContours(cv_image, [cont], -1, (0,255,0), 3)
+        #                         #cv2.rectangle(cv_image,(i,j),(i+size,j+size),(0,255,0),2)
+        #
+        #                         COLORMATRIX[a][b] = 2
+        #
+        #                     elif np.dot(blueWeights,meanarray) < 0:
+        #                         #cv2.drawContours(cv_image, [cont], -1, (255,0,0), 3)
+        #                         #cv2.rectangle(cv_image,(i,j),(i+size,j+size),(255,0,0),2)
+        #
+        #                         COLORMATRIX[a][b] = 3
+        #
+        #                     elif np.dot(redWeights,meanarray) < 0:
+        #                         #print "This is red"
+        #                         #cv2.drawContours(cv_image, [cont], -1, (0,0,255), 3)
+        #                         #cv2.rectangle(cv_image,(i,j),(i+size,j+size),(0,0,255),2)
+        #                         COLORMATRIX[a][b] = 1
+        #
+        #                 a = a + 1
+        #             a = 0
+        #             b = b + 1
+        #
+        #         #for j in range(1,int(rownum)):
+        #             #for i in range(0,int(colnum)):
+        #         #print "matrix of size: ",rownum," x ",colnum
+        #
+        #         REGIONMATRIX = np.zeros((rownum, colnum))
+        #         for j in range(0, int(colnum)):
+        #             for i in range(0, int(rownum)):
+        #                 #print COLORMATRIX[i][j],", "
+        #                 currItem = COLORMATRIX[i][j]
+        #                 sameNeighbours = 0
+        #                 if currItem != 0:
+        #                     if (i - 1) >= 0:
+        #                         if COLORMATRIX[i-1][j] == currItem:
+        #                             sameNeighbours = sameNeighbours + 1
+        #                         if (j - 1) >= 0:
+        #                             if COLORMATRIX[i-1][j-1] == currItem:
+        #                                 sameNeighbours = sameNeighbours + 1
+        #                         if (j + 1) <= (colnum-1):
+        #                             #print "if ",j+1," <= ",rownum
+        #                             #print "trying to access: ",i - 1,", ",j+1
+        #                             #print REGIONMATRIX
+        #                             if COLORMATRIX[i-1][j+1] == currItem:
+        #                                 sameNeighbours = sameNeighbours + 1
+        #                     if (i + 1) <= (rownum-1):
+        #                         if COLORMATRIX[i-1][j] == currItem:
+        #                             sameNeighbours = sameNeighbours + 1
+        #                         if (j - 1) >= 0:
+        #                             if COLORMATRIX[i+1][j] == currItem:
+        #                                 sameNeighbours = sameNeighbours + 1
+        #                         if (j + 1) <= (colnum-1):
+        #                             if COLORMATRIX[i+1][j+1] == currItem:
+        #                                 sameNeighbours = sameNeighbours + 1
+        #                     if (j - 1) >= 0:
+        #                         if COLORMATRIX[i][j-1] == currItem:
+        #                             sameNeighbours = sameNeighbours + 1
+        #                     if (j + 1) <= (colnum-1):
+        #                         if COLORMATRIX[i][j+1] == currItem:
+        #                             sameNeighbours = sameNeighbours + 1
+        #                 if sameNeighbours >=2:
+        #                     REGIONMATRIX[i][j] = currItem
+        #
+        #
+        #         #print REGIONMATRIX
+        #
+        #         bluemask = np.zeros(circleimg.shape,dtype="uint8")
+        #         greenmask = np.zeros(circleimg.shape,dtype="uint8")
+        #         redmask = np.zeros(circleimg.shape,dtype="uint8")
+        #
+        #         for j in range(0, int(colnum)):
+        #             for i in range(0, int(rownum)):
+        #                 #bluemask.rectangle(x + (j*size))
+        #                 if (REGIONMATRIX[i][j]) == 3:
+        #                     cv2.rectangle(bluemask,(x + (j*size),y + (i*size)),(x + (j*size)+size,y + (i*size)+size),1,-1)
+        #                     #cv2.rectangle(cv_image,(x + (j*size),y + (i*size)),(x + (j*size)+size,y + (i*size)+size),(255,0,0),-1)
+        #
+        #
+        #                 if (REGIONMATRIX[i][j]) == 2:
+        #                     cv2.rectangle(greenmask,(x + (j*size),y + (i*size)),(x + (j*size)+size,y + (i*size)+size),(255,255,255),-1)
+        #
+        #                 if (REGIONMATRIX[i][j]) == 1:
+        #                     cv2.rectangle(redmask,(x + (j*size),y + (i*size)),(x + (j*size)+size,y + (i*size)+size),(255,255,255),-1)
+        #
+        #         separatedimage = cv2.bitwise_and(cv_image, cv_image, mask=bluemask)
+        #
+        #         ret,thresh5 = cv2.threshold(separatedimage,127,255,cv2.THRESH_TOZERO_INV)
+        #         edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #         dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #         dilation = cv2.erode(dilation,kernel,iterations = 1)
+        #         #dilation = cv2.dilate(dilation,kernel,iterations = 1)
+        #
+        #         cv2.imshow("dilated image", dilation)
+        #
+        #         contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #         splitcontours = []
+        #
+        #         for cont in contours:
+        #             if cv2.contourArea(cont) > 400:
+        #                 hull = cv2.convexHull(cont)
+        #                 hullmask = np.zeros(circleimg.shape,dtype="uint8")
+        #                 cv2.drawContours(hullmask, [hull], -1, 1, -1)
+        #                 hullimage = cv2.bitwise_and(cv_image, cv_image, mask=hullmask)
+        #
+        #                 ret,thresh5 = cv2.threshold(hullimage,127,255,cv2.THRESH_TOZERO_INV)
+        #                 edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #                 dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #                 dilation = cv2.erode(dilation,kernel,iterations = 1)
+        #
+        #                 hullcontours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #                 for cont in hullcontours:
+        #                     if cv2.contourArea(cont) > 500:
+        #                         cv2.drawContours(cv_image, [cont], -1, (255, 0, 0), 3)
+        #                         splitcontours.append(cont)
+        #
+        #         separatedimage = cv2.bitwise_and(cv_image, cv_image, mask=greenmask)
+        #
+        #         ret,thresh5 = cv2.threshold(separatedimage,127,255,cv2.THRESH_TOZERO_INV)
+        #         edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #         dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #         dilation = cv2.erode(dilation,kernel,iterations = 1)
+        #         #dilation = cv2.dilate(dilation,kernel,iterations = 1)
+        #
+        #         cv2.imshow("dilated image", dilation)
+        #
+        #         contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #         cns = sorted(contours, key = cv2.contourArea, reverse = True)[:10]
+        #         for cont in contours:
+        #             #print "contour area is: ",cv2.contourArea(cont)
+        #             if cv2.contourArea(cont) > 400:
+        #                 hull = cv2.convexHull(cont)
+        #                 hullmask = np.zeros(circleimg.shape,dtype="uint8")
+        #                 cv2.drawContours(hullmask, [hull], -1, 1, -1)
+        #                 hullimage = cv2.bitwise_and(cv_image, cv_image, mask=hullmask)
+        #
+        #                 ret,thresh5 = cv2.threshold(hullimage,127,255,cv2.THRESH_TOZERO_INV)
+        #                 edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #                 dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #                 dilation = cv2.erode(dilation,kernel,iterations = 1)
+        #
+        #                 hullcontours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #                 for cont in hullcontours:
+        #                     if cv2.contourArea(cont) > 500:
+        #                         cv2.drawContours(cv_image, [cont], -1, (0, 255, 0), 3)
+        #                         splitcontours.append(cont)
+        #
+        #
+        #         separatedimage = cv2.bitwise_and(cv_image, cv_image, mask=redmask)
+        #
+        #         ret,thresh5 = cv2.threshold(separatedimage,127,255,cv2.THRESH_TOZERO_INV)
+        #         edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #         dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #         dilation = cv2.erode(dilation,kernel,iterations = 1)
+        #         #dilation = cv2.dilate(dilation,kernel,iterations = 1)
+        #
+        #         cv2.imshow("dilated image", dilation)
+        #
+        #         contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #         for cont in contours:
+        #             if cv2.contourArea(cont) > 400:
+        #                 hull = cv2.convexHull(cont)
+        #                 hullmask = np.zeros(circleimg.shape,dtype="uint8")
+        #                 cv2.drawContours(hullmask, [hull], -1, 1, -1)
+        #                 hullimage = cv2.bitwise_and(cv_image, cv_image, mask=hullmask)
+        #
+        #                 ret,thresh5 = cv2.threshold(hullimage,127,255,cv2.THRESH_TOZERO_INV)
+        #                 edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
+        #                 dilation = cv2.dilate(edges,kernel,iterations = 1)
+        #                 dilation = cv2.erode(dilation,kernel,iterations = 1)
+        #
+        #                 hullcontours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        #
+        #                 for cont in hullcontours:
+        #                     if cv2.contourArea(cont) > 500:
+        #                         cv2.drawContours(cv_image, [cont], -1, (0, 0, 255), 3)
+        #                         splitcontours.append(cont)
+        #
+        #
+        #         collisionNum = collisionNum + 1
 
-                print "Collision area: ",area
-                #peri = cv2.arcLength(cont, True)
-                #approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
+        for split in splitcontours:
+            rows,cols = cv_image.shape[:2]
+            [vx,vy,x,y] = cv2.fitLine(split, cv2.cv.CV_DIST_L2,0,0.01,0.01)
+            lefty = int((-x*vy/vx) + y)
+            righty = int(((cols-x)*vy/vx)+y)
+            #cv2.line(cv_image,(cols-1,righty),(0,lefty),(0,0,0),2)
+            M = cv2.moments(split)
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
 
-                rect = cv2.minAreaRect(cont)
-                box = cv2.cv.BoxPoints(rect)
-                box = np.int0(box)
+            angle = math.atan2(righty - lefty, cols-1 - 0)
+            approach = angle
 
-                x,y,w,h = cv2.boundingRect(cont)
-                #cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+            dist = 45
+            approach = approach * (180/math.pi)
+            print "approach angle: ", approach, "approach/90: ",approach%90
 
-                #print rect[1][0]
-                print "Box width = ",rect[1][0],", box height = ",rect[1][1]
+            if (approach < 0):
+                newapproach = approach + 90
+            elif (approach >= 0):
+                newapproach = approach
 
-                #cv2.drawContours(cv_image,[newbox],0,(0,255,0),3)
+            height = dist * math.sin(newapproach)
+            width = dist * math.cos(newapproach)
 
-
-                collisionmask = np.zeros(circleimg.shape,dtype="uint8")
-                #cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
-                cv2.rectangle(cv_image,(x,y),(x+w,y+h),(0,255,0),2)
-
-                kernel1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20))
-
-                #kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 5))
-                morph = cv2.morphologyEx(mask2, cv2.MORPH_OPEN, kernel1)
-
-                #morph = cv2.morphologyEx(morph, cv2.MORPH_GRADIENT, kernel2)
-                dist = cv2.distanceTransform(morph, cv2.cv.CV_DIST_L2, cv2.cv.CV_DIST_MASK_PRECISE)
-
-                cv2.imshow('dist', dist)
-
-                borderSize = 50
-                distborder = cv2.copyMakeBorder(dist, borderSize, borderSize, borderSize, borderSize,
-                                                cv2.BORDER_CONSTANT | cv2.BORDER_ISOLATED, 0)
-                gap = 10
-                kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (50, 30))
-                kernel2 = cv2.copyMakeBorder(kernel2, gap, gap, gap, gap,
-                                                cv2.BORDER_CONSTANT | cv2.BORDER_ISOLATED, 0)
-                distTempl = cv2.distanceTransform(kernel2, cv2.cv.CV_DIST_L2, cv2.cv.CV_DIST_MASK_PRECISE)
-                cv2.imshow('disttempl', distTempl)
-
-                nxcor = cv2.matchTemplate(distborder, distTempl, cv2.TM_CCOEFF_NORMED)
-                mn, mx, _, _ = cv2.minMaxLoc(nxcor)
-                th, peaks = cv2.threshold(nxcor, mx*0.5, 255, cv2.THRESH_BINARY)
-                peaks8u = cv2.convertScaleAbs(peaks)
-                contours, hierarchy = cv2.findContours(peaks8u, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-                peaks8u = cv2.convertScaleAbs(peaks)    # to use as mask
-                for i in range(len(contours)):
-                    x, y, w, h = cv2.boundingRect(contours[i])
-                    _, mx, _, mxloc = cv2.minMaxLoc(dist[y:y+h, x:x+w], peaks8u[y:y+h, x:x+w])
-                    cv2.circle(cv_image, (int(mxloc[0]+x), int(mxloc[1]+y)), int(mx), (255, 0, 0), 2)
-                    cv2.rectangle(cv_image, (x, y), (x+w, y+h), (0, 255, 255), 2)
-                    cv2.drawContours(cv_image, contours, i, (0, 0, 255), 2)
-
-                cv2.imshow('circles', cv_image)
+            print (cx + width)
+            if (approach > 0):
+                cv2.circle(cv_image, (int(cx + width), int(cy + height)), 12, (0,0,0), -1)
+                cv2.circle(cv_image, (int(cx - width), int(cy - height)), 12, (0,0,0), -1)
+            if (approach < 0):
+                cv2.circle(cv_image, (int(cx + width), int(cy - height)), 12, (0,0,0), -1)
+                cv2.circle(cv_image, (int(cx - width), int(cy + height)), 12, (0,0,0), -1)
 
 
-        #newcontours,newhier = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
-        #         gap = 20
-        #
-        #         width = 0
-        #         height = 0
-        #         if rect[1][0] < rect[1][1]:
-        #             width = rect[1][0]
-        #             height = rect[1][1]
-        #         # if rect[1][0] > rect[1][1]:
-        #         #     longside = rect[1][0]
-        #         #     shortside = rect[1][1]
-        #
-        #             newrect = ((rect[0][0]+width/2+gap, rect[0][1]), (rect[1][0], height/2), rect[2])
-        #             newbox = cv2.cv.BoxPoints(newrect)
-        #             newbox = np.int0(newbox)
-        #
-        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
-        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
-        #
-        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
-        #
-        #
-        #             overallmask = overallmask + collisionmask
-        #
-        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
-        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
-        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
-        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
-        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        #
-        #             for i in range(0,len(contours)):
-        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
-        #                     extracontours.append(contours[i])
-        #
-        #             newrect = ((rect[0][0]-width/2-gap, rect[0][1]), (rect[1][0], height/2), rect[2])
-        #             newbox = cv2.cv.BoxPoints(newrect)
-        #             newbox = np.int0(newbox)
-        #
-        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
-        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
-        #
-        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
-        #
-        #
-        #             overallmask = overallmask + collisionmask
-        #
-        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
-        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
-        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
-        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
-        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        #
-        #             for i in range(0,len(contours)):
-        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
-        #                     extracontours.append(contours[i])
-        #
-        #
-        #         if rect[1][0] > rect[1][1]:
-        #             width = rect[1][0]
-        #             height = rect[1][1]
-        #         # if rect[1][0] > rect[1][1]:
-        #         #     longside = rect[1][0]
-        #         #     shortside = rect[1][1]
-        #
-        #             #rect.center.y = rect[0][1] + height/2
-        #             #rect.set_width(width/2)
-        #             newrect = ((rect[0][0], rect[0][1]+height/2+gap), (width/2, rect[1][1]), rect[2])
-        #             newbox = cv2.cv.BoxPoints(newrect)
-        #             newbox = np.int0(newbox)
-        #
-        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
-        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
-        #
-        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
-        #
-        #             overallmask = overallmask + collisionmask
-        #
-        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
-        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
-        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
-        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
-        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        #
-        #             for i in range(0,len(contours)):
-        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
-        #                     extracontours.append(contours[i])
-        #
-        #             newrect = ((rect[0][0], rect[0][1]-height/2-gap), (width/2, rect[1][1]), rect[2])
-        #             newbox = cv2.cv.BoxPoints(newrect)
-        #             newbox = np.int0(newbox)
-        #
-        #             collisionmask = np.zeros(circleimg.shape,dtype="uint8")
-        #             cv2.drawContours(collisionmask, [newbox], -1, 255, -1)
-        #
-        #             collisionimage = cv2.bitwise_and(simg, simg, mask=collisionmask)
-        #             ret,thresh5 = cv2.threshold(collisionimage,127,255,cv2.THRESH_TOZERO_INV)
-        #             edges = cv2.Canny(thresh5,50,200,apertureSize = 3)
-        #             dilation = cv2.dilate(edges,kernel,iterations = 1)
-        #             contours,hier = cv2.findContours(dilation,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        #
-        #             cv2.imshow("contourdilation", dilation)
-        #
-        #             for i in range(0,len(contours)):
-        #                 print (cv2.contourArea(contours[i]))
-        #                 print (cv2.arcLength(contours[i], True))
-        #
-        #                 #if cv2.contourArea(contours[i]) > 30:
-        #                 #    extracontours.append(contours[i])
-        #                 if 50 < (cv2.arcLength(contours[i], True)) < 300:
-        #                     extracontours.append(contours[i])
-        #
-        #             #cv2.drawContours(cv_image,[newbox],0,(0,0,0),2)
-        #
-        #
-        #             overallmask = overallmask + collisionmask
-        #
-        # for i in range(0,len(extracontours)):
-        #     newcontours.append(extracontours[i])
-
+        # for cont in collisionContours:
+        #     newcontours.append(cont)
 
         for cont in newcontours:
             area = cv2.contourArea(cont)
@@ -378,9 +509,7 @@ def callback(message):
                     blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
                     bluecentres.append((cx, cy))
 
-
-
-                print rect
+                #print rect
 
 
 
@@ -446,7 +575,6 @@ def callback(message):
 
     pub = rospy.Publisher("pageCenre", PointStamped, queue_size=10)
     pub.publish(PAGECENTREPOINT)
-
 
 
 def find_background(img):
@@ -602,6 +730,7 @@ global subscribeCounter
 subscribeCounter = 0
 #Subscribes to left hand camera image feed
 def main():
+    rospy.sleep(10)
     rospy.init_node('view_sweet_cam', anonymous = True)
 
     # cv2.namedWindow('IMAGE', flags=0)

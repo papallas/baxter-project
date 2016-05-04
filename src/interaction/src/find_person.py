@@ -1,54 +1,15 @@
 #!/usr/bin/env python
-
-# data for blue Sweets
-# 1,48,139,37,255,255,255,6
-
-# data for green sweets
-# 1,46,61,0,106,198,218,5
-#The structure of this file was taken from the baxter_stocking_stuffer project by students in Northwestern's MSR program - Josh Marino, Sabeen Admani, Andrew Turchina and Chu-Chu Igbokwe
-# Message published - opencv/center_of_object - contains x,y,z coordinates as a Point message
-
 import rospy
 import numpy as np
 import cv2
-import baxter_interface
-import math
-
-from std_msgs.msg import String
-from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point
 
 from manipulation.srv import *
-from manipulation.srv import LookForSweets
-from collections import OrderedDict
 
 from cv_bridge import CvBridge, CvBridgeError
 
 import tf
 
 from sensor_msgs.msg import Image
-import baxter_interface
-#from moveit_commander import conversions
-from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, PointStamped
-from std_msgs.msg import Header
-import std_srvs.srv
-from baxter_core_msgs.srv import SolvePositionIK, SolvePositionIKRequest
-
-# global receivedimage
-# receivedimage = 0
-# global backgroundimage
-#
-# global resetbackground
-# resetbackground = False
-#
-# global personFrame
-# personFrame = 0
-# global nopersonFrame
-# nopersonFrame = 0
-# global personExists
-# personExists = False
-# global personStayed
-# personStayed = False
 
 class PersonFinder:
     def __init__(self):

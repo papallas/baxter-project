@@ -93,9 +93,6 @@ class locateAndMove():
         self._left_grip = baxter_interface.Gripper('left', CHECK_VERSION)
         self._right_grip = baxter_interface.Gripper('right', CHECK_VERSION)
         # calibrate
-        #self._right_grip.calibrate()
-        # self._left_grip_state   = 'open'
-        self._right_grip_state  = 'open'
 
         self._left_grip.calibrate()
         self._right_grip.calibrate()
@@ -449,7 +446,7 @@ class locateAndMove():
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], self.left_pose[2],
         self.left_pose[3]+0.3,self.left_pose[4],self.left_pose[5])
 
-        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.197,
+        self.move_and_rotate("left", self.left_pose[0], self.left_pose[1]-0.03, -0.2,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
     def update_left(self):
@@ -475,7 +472,7 @@ class locateAndMove():
         self.left_interface.set_joint_position_speed(0.1)
         # -0.17
 
-        self.move_and_rotate("left", pagex-0.21, pagey-0.05, self.left_pose[2]+0.05,
+        self.move_and_rotate("left", pagex-0.21, pagey-0.1, self.left_pose[2]+0.05,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
         print "moved to pagex"
 
@@ -485,7 +482,7 @@ class locateAndMove():
         angles = self.left_interface.joint_angles()
         main = dict(angles)
         leftpos = main["left_w2"]
-        leftpos = leftpos - (1.2+(height*0.2))
+        leftpos = leftpos - (1.1+(height*0.2))
         main["left_w2"] = leftpos
         self.left_interface.move_to_joint_positions(main)
 
@@ -496,10 +493,10 @@ class locateAndMove():
 
         self.left_interface.set_joint_position_speed(0.9)
 
-        self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1], self.left_pose[2]+0.15,
+        self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1], self.left_pose[2]+0.2,
         self.left_pose[3],self.left_pose[4],self.left_pose[5]-0.2)
 
-        self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1], self.left_pose[2]-0.15,
+        self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1], self.left_pose[2]-0.2,
         self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.2)
 
         self.move_and_rotate("left", pagex-0.21, pagey+0.08, self.left_pose[2],
@@ -510,23 +507,23 @@ class locateAndMove():
         main = dict(angles)
         print main
         leftpos = main["left_w2"]
-        leftpos = leftpos - (0.2)
+        leftpos = leftpos - (0.1)
         main["left_w2"] = leftpos
         self.left_interface.move_to_joint_positions(main)
 
         self.update_left()
 
-        self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1], self.left_pose[2]+0.15,
+        self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1], self.left_pose[2]+0.2,
         self.left_pose[3],self.left_pose[4],self.left_pose[5]-0.2)
 
-        self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1], self.left_pose[2]-0.15,
+        self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1], self.left_pose[2]-0.2,
         self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.2)
 
         names = self.left_interface.joint_names()
         angles = self.left_interface.joint_angles()
         main = dict(angles)
         leftpos = main["left_w2"]
-        leftpos = leftpos + (1.4+(height*0.2))
+        leftpos = leftpos + (1.2+(height*0.2))
         main["left_w2"] = leftpos
         self.left_interface.move_to_joint_positions(main)
 
@@ -742,13 +739,18 @@ def gripperholding(state):
         gripped = False
 
 
+
 if __name__ == '__main__':
     rospy.Subscriber("/robot/end_effector/right_gripper/state", EndEffectorState, gripperholding)
 
     move = locateAndMove()
 
+    #move.moveToSweets()
+    # string = move.reset_sweets()
+    # num, centres, anglelist, page = move.get_sweet_client()
+
     while True:
-        #string = move.wait_for_person()
+        string = move.wait_for_person()
         print "Person exists"
 
         global overallGiven
@@ -759,7 +761,7 @@ if __name__ == '__main__':
         blueGiven = 0
         global greenGiven
         greenGiven = 0
-        # sweetRequests = move.get_voice_command();
+        #sweetRequests = move.get_voice_command();
         # blueRequest = sweetRequests[2]
         # greenRequest = sweetRequests[1]
         # redRequest = sweetRequests[0]
