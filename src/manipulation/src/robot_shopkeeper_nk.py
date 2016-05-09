@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
+import sys, os, inspect
 import struct
+import cv2
 
 import rospy
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image
+
+
+from mary_tts.srv import *
 
 from geometry_msgs.msg import (
     PoseStamped,
@@ -38,6 +44,9 @@ from sound_play.libsoundplay import SoundClient
 
 # initialise ros node
 rospy.init_node("shopkeeper", anonymous = True)
+
+# file directory
+directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
 # The shopkeeper class contains all of the manipulation tasks that Baxter
@@ -297,15 +306,11 @@ class ShopKeeper:
         self.left_interface.set_joint_position_speed(0.1)
         # Move the bowl back to the left of the page and lower - keep
         # hold of the bowl for further tilts
-        self.move_and_rotate("left", x, y-0.02, self.left_pose[2],
+        self.move_and_rotate("left", x, y-+0.01, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
         self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.18,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
-
-        self._left_grip.open()
-
-        self.move_and_rotate("left", 0.5815, 0.1831, 0.1008, 3.1209, 0.0492, 2.8580)
 
     # Move the right arm forward so Baxter can see the sweet area fully within
     # the camera image
@@ -330,6 +335,8 @@ class ShopKeeper:
         overall = -2.8676 + ((90/(180/math.pi)) - angle)
         # Offset in x direction - added after grabbing too low on occasion
         x = x + 0.008
+
+        send_image('default')
 
         # Move above the sweet and then move slowly downwards and grab it, then
         # lift the sweet off the page
@@ -364,6 +371,8 @@ class ShopKeeper:
         # If Baxter missed the sweet, then ignore the next step and move on
         if self.gripped == False:
             self._right_grip.open()
+            send_image('anger')
+            self.speak('Whoops')
 
     # print all 6 arm coordinates (only required for programme development)
     def print_arm_pose(self):
@@ -404,6 +413,14 @@ class ShopKeeper:
         quaternion      = quaternion_pose['orientation']
         euler           = tf.transformations.euler_from_quaternion(quaternion)
         return [position[0], position[1], position[2], euler[0], euler[1], euler[2]]
+
+    def speak(self,x):
+        rospy.wait_for_service('ros_mary')
+        try:
+            add_two_ints = rospy.ServiceProxy('ros_mary',ros_mary)
+            resp1 = add_two_ints(x)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
 
 # This class contains communcation methods to send and receive custom messages
 # to the different app, vision and manipulation nodes
@@ -472,7 +489,7 @@ class Communications:
             print "Service call failed: %s"%e
 
     # Get in position and wait for someone to wait in front of Baxter
-    def wait_for_person(self):
+    def wait_for_person(self, request):
         # Move the right arm out of the way of the head's camera using preset
         # joint values
         positions = {'right_e0': 0.5250049246537829, 'right_e1': 1.9450876390387046, \
@@ -489,10 +506,23 @@ class Communications:
         rospy.wait_for_service('look_for_person')
         try:
             person_req = rospy.ServiceProxy('look_for_person', RequestPerson)
-            resp = person_req("")
+            resp = person_req(request)
             return resp.ok
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+
+def send_image(img_name):
+    """
+    Send the image located at the specified path to the head
+    display on Baxter.
+    @param path: path to the image file to load and send
+    """
+    path = directory+'/images/'+img_name+'.png'
+    img = cv2.imread(path)
+    msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
+    pub = rospy.Publisher('/robot/xdisplay', Image, latch=True, queue_size=1)
+    pub.publish(msg)
+    rospy.sleep(1)
 
 # Main function - the basic system logic for Baxter to run the shop - uses
 # loops and managing variables where appropriate
@@ -507,6 +537,9 @@ if __name__ == '__main__':
                                                             baxter.gripperholding)
 
     # SETUP TASKS
+
+    send_image('bored')
+
 
     # Move to the sweet area before the sweet vision system can be initialised
     # and reset the vision system before retrieving the info
@@ -545,16 +578,24 @@ so it is above the sweet bag/container\n\n"
     # Whilst there, get the page centre (should be no sweets initially)
     num, centres, anglelist, page = comms.get_sweet_client()
 
-
     # THIS IS THE MAIN SHOP LOOP THAT WILL BE RUN CONSTANTLY AFTER LAUNCHING
     while True:
+        send_image('bored')
         # First of all, wait for a customer approaches
         print "Waiting for a customer to approach...\n"
-        comms.wait_for_person()
+        comms.wait_for_person("enter")
+        send_image('default')
 
+        baxter.speak('Hello, welcome to my shop.')
         print "Hello customer, welcome to my shop, what sweets would you like \
 today?"
+
         # Request and wait for the customer's order
+        baxter.speak('What sweets would you like today')
+
+        baxter.speak('Speak after the beep and press the place order button to confirm')
+        rospy.sleep(11)
+
         command = comms.get_app_command()
         blueRequest = command[0]
         greenRequest = command[2]
@@ -562,13 +603,15 @@ today?"
         print"You want ",blueRequest," blue sweets, ",greenRequest," green sweets \
 and ",redRequest," red sweets"
 
-        # MOVE IN POSITION TO GRAB THE BOWL
-        baxter.move_to_grab_bowl(x, y, z)
-        num = [0,0,0]
+        baxter.moveToSweets()
+        comms.reset_sweets()
+        num, centres, anglelist, centrepage = comms.get_sweet_client()
 
         count = 0
         while (num[2] < blueRequest or num[1] < greenRequest or num[0] < redRequest):
             if count == 0:
+                # MOVE IN POSITION TO GRAB THE BOWL
+                baxter.move_to_grab_bowl(x, y, z)
                 baxter.tip_bowl(x, y, z, page[0], page[1], True, count)
             else:
                 baxter.tip_bowl(x, y, z, page[0], page[1], False, count)
@@ -595,7 +638,9 @@ and ",redRequest," red sweets"
 
             baxter._right_grip.open()
 
+        baxter._left_grip.open()
 
+        baxter.move_and_rotate("left", 0.5815, 0.1831, 0.1008, 3.1209, 0.0492, 2.8580)
 
         numGiven = 0
 
@@ -621,6 +666,9 @@ and ",redRequest," red sweets"
 
             num, centres, anglelist, page = comms.get_sweet_client()
             print str(baxter.redGiven)," red sweets have been given to the customer"
+        if (redRequest != 0):
+            baxter.speak('Here are your red sweets.')
+
 
         while baxter.greenGiven < greenRequest:
             points = []
@@ -644,6 +692,8 @@ and ",redRequest," red sweets"
 
             num, centres, anglelist, page = comms.get_sweet_client()
             print str(baxter.greenGiven)," green sweets have been given to the customer"
+        if (greenRequest != 0):
+            baxter.speak('Here are your green sweets.')
 
         while baxter.blueGiven < blueRequest:
             points = []
@@ -667,5 +717,18 @@ and ",redRequest," red sweets"
 
             num, centres, anglelist, page = comms.get_sweet_client()
             print str(baxter.blueGiven)," blue sweets have been given to the customer"
+        if (blueRequest != 0):
+            baxter.speak('Here are your blue sweets.')
+
+        send_image('happy')
+
+        baxter.speak('Here you go. Thankyou for visiting my shop')
+
 
         print"Success! Customer has all their sweets!"
+
+        baxter.redGiven = 0
+        baxter.blueGiven = 0
+        baxter.greenGiven = 0
+
+        comms.wait_for_person("exit")

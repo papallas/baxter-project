@@ -14,6 +14,6 @@
 
 <!-- Run the human interaction system listen for commands and recognise customers -->
 <node pkg="interaction" type="app_server.py" name="app_server" output="screen"/>
-<node pkg="interaction" type="find_person.py" name="find_person"/>
+<node pkg="interaction" type="find_person.py" name="find_person" output="screen"/>
 
 </launch>
