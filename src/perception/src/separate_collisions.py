@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-# data for blue Sweets
-# 1,48,139,37,255,255,255,6
-
-# data for green sweets
-# 1,46,61,0,106,198,218,5
-
 import rospy
 import numpy as np
 import cv2
@@ -58,6 +52,80 @@ global pageCentre
 
 global sweetMask
 sweetMask = "nil"
+
+# convert image pixel to Baxter point
+def pixel_to_baxter(imagex, imagey):
+    # FROM CAMERA_INFO ROSTOPIC
+    # INTRINSIC CAMERA MATRIX (fx, 0, cx)
+                            # (0, fy, cy)
+                            # (0, 0, 1)
+    # K: [407.366831078, 0.0, 642.166170111, 0.0, 407.366831078, 387.185928717, 0.0, 0.0, 1.0]
+
+    fx = 407.366831078
+    fy = 407.366831078
+    cx = 642.166170111
+    cy = 387.185928717
+
+    # USING DISTANCE S FROM TABLE AND THE FACT THE 3D CAMERA COORD IS s*((u-cx)/fx, (v-cy)/fy, 1)
+
+    u = imagex
+    v = imagey
+    xl = (u - cx)/fx
+    yl = (v - cy)/fy
+
+    s = 0.45
+    x = xl * s
+    y = yl * s
+
+    return (x, y)
+
+def find_background(img):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #gray = cv2.bilateralFilter(hsv, 11, 17, 17)
+    edges = cv2.Canny(hsv,30,200,apertureSize = 3)
+    # DILATE EDGE LINES
+    kernel = np.ones((5,5),np.uint8)
+    dilation = cv2.dilate(edges,kernel,iterations = 1)
+    # FIND 10 LARGEST CONTOURS IN IMAGE
+    (cnts, _) = cv2.findContours(dilation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    cns = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
+    mask = np.zeros(img.shape[:2], dtype="uint8") * 25
+
+    global foundsquare, pageCentre, tl, PAGECENTREPOINT
+
+    foundsquare = False
+    # FIND RECTANGLE IN IMAGE AND SEGMENT - WHAT IF MULTIPLE RECTANGLES?
+    for cont in cns:
+        peri = cv2.arcLength(cont, True)
+        approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
+        #cv2.drawContours(img, [cont], -1, (255,0,0), 3)
+        if len(approx) == 4:
+            if cv2.contourArea(cont) > 70000:
+                foundsquare = True
+                cv2.drawContours(mask, [cont], -1, 1, -1)
+
+                M = cv2.moments(cont)
+                cx = int(M['m10']/M['m00'])
+                cy = int(M['m01']/M['m00'])
+                [x, y] = pixel_to_baxter(cx, cy)
+                #newcoords.append((x,y))
+                point = PointStamped()
+                point.header.frame_id = "right_hand_camera"
+                point.point.x = x
+                point.point.y = y
+                point.point.z = 0.45
+                PAGECENTREPOINT = tl.transformPoint("torso", point)
+                pageCentre = [PAGECENTREPOINT.point.x, PAGECENTREPOINT.point.y, PAGECENTREPOINT.point.z]
+                print cv2.contourArea(cont)
+
+    #img = cv2.bitwise_and(img, img, mask=mask)
+
+    #cv2.imshow("squarecontours", img)
+
+    if (foundsquare == False):
+        print "sweet area is not found"
+
+    return mask, foundsquare
 
 #Thresholds image and stores position of object in (x,y) coordinates of the camera's frame, with origin at center.
 def callback(message):
@@ -410,366 +478,75 @@ def callback(message):
                                 splitcontours.append(cont)
 
 
+                collisionNum = collisionNum + 1
 
-        #
-        # for split in splitcontours:
-        #     rows,cols = cv_image.shape[:2]
-        #     [vx,vy,x,y] = cv2.fitLine(split, cv2.cv.CV_DIST_L2,0,0.01,0.01)
-        #     lefty = int((-x*vy/vx) + y)
-        #     righty = int(((cols-x)*vy/vx)+y)
-        #     #cv2.line(cv_image,(cols-1,righty),(0,lefty),(0,0,0),2)
-        #     M = cv2.moments(split)
-        #     cx = int(M['m10']/M['m00'])
-        #     cy = int(M['m01']/M['m00'])
-        #
-        #     angle = math.atan2(righty - lefty, cols-1 - 0)
-        #     approach = angle
-        #
-        #     dist = 45
-        #     approach = approach * (180/math.pi)
-        #     print "approach angle: ", approach, "approach/90: ",approach%90
-        #
-        #     if (approach < 0):
-        #         newapproach = approach + 90
-        #     elif (approach >= 0):
-        #         newapproach = approach
-        #
-        #     height = dist * math.sin(newapproach)
-        #     width = dist * math.cos(newapproach)
-        #
-        #     print (cx + width)
-        #     if (approach > 0):
-        #         cv2.circle(cv_image, (int(cx + width), int(cy + height)), 12, (0,0,0), -1)
-        #         cv2.circle(cv_image, (int(cx - width), int(cy - height)), 12, (0,0,0), -1)
-        #     if (approach < 0):
-        #         cv2.circle(cv_image, (int(cx + width), int(cy - height)), 12, (0,0,0), -1)
-        #         cv2.circle(cv_image, (int(cx - width), int(cy + height)), 12, (0,0,0), -1)
+                cv2.imshow("mainimage2", cv_image)
 
-        for cont in splitcontours:
-            newmask = np.zeros(circleimg.shape,dtype="uint8")
-            cv2.drawContours(newmask, [cont], -1, 255, -1)
 
-            newmask = cv2.erode(newmask, None, iterations=1)
-            mean = cv2.mean(cv_image, mask=newmask)[:3]
-
-            meanarray = np.array([mean[0], mean[1], mean[2], 1])
-
+        for split in splitcontours:
             rows,cols = cv_image.shape[:2]
-            [vx,vy,x,y] = cv2.fitLine(cont, cv2.cv.CV_DIST_L2,0,0.01,0.01)
+            [vx,vy,x,y] = cv2.fitLine(split, cv2.cv.CV_DIST_L2,0,0.01,0.01)
             lefty = int((-x*vy/vx) + y)
             righty = int(((cols-x)*vy/vx)+y)
-            M = cv2.moments(cont)
+            #cv2.line(cv_image,(cols-1,righty),(0,lefty),(0,0,0),2)
+            M = cv2.moments(split)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
 
-            if np.dot(redWeights,meanarray) < 0:
-                #print "This is red"
-                cv2.drawContours(cv_image, [cont], -1, (0,0,255), 3)
-                colourAmounts[0] = colourAmounts[0] + 1
-                redangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                redcentres.append((cx, cy))
+            angle = math.atan2(righty - lefty, cols-1 - 0)
+            approach = angle
 
-            elif np.dot(greenWeights,meanarray) < 0:
-                #print "This is green"
-                cv2.drawContours(cv_image, [cont], -1, (0,255,0), 3)
-                colourAmounts[1] = colourAmounts[1] + 1
-                greenangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                greencentres.append((cx, cy))
+            dist = 45
+            approach = approach * (180/math.pi)
+            print "approach angle: ", approach, "approach/90: ",approach%90
 
-            elif np.dot(blueWeights,meanarray) < 0:
-                #print "This is blue"
-                cv2.drawContours(cv_image, [cont], -1, (255,0,0), 3)
-                colourAmounts[2] = colourAmounts[2] + 1
-                blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                bluecentres.append((cx, cy))
-
-        for cont in newcontours:
-            area = cv2.contourArea(cont)
-            # cut out large border of page contours
-            #print area
-
-            if 500 < area < 1500:
-                print "Sweet area: ",area
-
-                newmask = np.zeros(circleimg.shape,dtype="uint8")
-                cv2.drawContours(newmask, [cont], -1, 255, -1)
-
-                newmask = cv2.erode(newmask, None, iterations=1)
-                mean = cv2.mean(cv_image, mask=newmask)[:3]
-
-                meanarray = np.array([mean[0], mean[1], mean[2], 1])
-
-                rows,cols = cv_image.shape[:2]
-                [vx,vy,x,y] = cv2.fitLine(cont, cv2.cv.CV_DIST_L2,0,0.01,0.01)
-                lefty = int((-x*vy/vx) + y)
-                righty = int(((cols-x)*vy/vx)+y)
-                M = cv2.moments(cont)
-                cx = int(M['m10']/M['m00'])
-                cy = int(M['m01']/M['m00'])
-
-                if np.dot(redWeights,meanarray) < 0:
-                    #print "This is red"
-                    cv2.drawContours(cv_image, [cont], -1, (0,0,255), 3)
-                    colourAmounts[0] = colourAmounts[0] + 1
-                    redangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                    redcentres.append((cx, cy))
-
-                elif np.dot(greenWeights,meanarray) < 0:
-                    #print "This is green"
-                    cv2.drawContours(cv_image, [cont], -1, (0,255,0), 3)
-                    colourAmounts[1] = colourAmounts[1] + 1
-                    greenangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                    greencentres.append((cx, cy))
-
-                elif np.dot(blueWeights,meanarray) < 0:
-                    #print "This is blue"
-                    cv2.drawContours(cv_image, [cont], -1, (255,0,0), 3)
-                    colourAmounts[2] = colourAmounts[2] + 1
-                    blueangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                    bluecentres.append((cx, cy))
-
-                #print rect
+            # if (approach < 0):
+            #     newapproach = approach + 90
+            # elif (approach >= 0):
+            #     newapproach = approach
+            newapproach = approach + 90
 
 
+            height = dist * math.sin(newapproach)
+            width = dist * math.cos(newapproach)
 
-                #cv2.drawContours(cv_image,[box],0,(0,0,255),2)
+            # print (cx + width)
+            # if (approach > 0):
+            #     cv2.circle(cv_image, (int(cx + width), int(cy + height)), 12, (0,0,0), -1)
+            #     cv2.circle(cv_image, (int(cx - width), int(cy - height)), 12, (0,0,0), -1)
+            # if (approach < 0):
+            #     cv2.circle(cv_image, (int(cx + width), int(cy - height)), 12, (0,0,0), -1)
+            #     cv2.circle(cv_image, (int(cx - width), int(cy + height)), 12, (0,0,0), -1)
 
-                #cv2.drawContours(cv_image, [approx], -1, (0,0,0), 3)
+            leftok = cv2.pointPolygonTest(split, ((cx+width), (cy+height)), False)
+            rightok = cv2.pointPolygonTest(split, ((cx+width), (cy+height)), False)
+            if (leftok < 0) and (rightok < 0):
+                cv2.circle(cv_image, (int(cx + width), int(cy + height)), 12, (0,0,0), -1)
+                cv2.circle(cv_image, (int(cx - width), int(cy - height)), 12, (0,0,0), -1)
 
-        collisionimage = cv2.bitwise_and(simg, simg, mask=overallmask)
-        for i in range(0,len(extracontours)):
-            cv2.drawContours(collisionimage, [extracontours[i]], -1, (255,0,0), 3)
-        cv2.imshow("CONTOUR IMAGE: ", collisionimage)
-
-
-        centres = []
-        angles = []
-
-        for i in range(0,len(redcentres)):
-            centres.append(redcentres[i])
-            angles.append(redangles[i])
-        for i in range(0,len(greencentres)):
-            centres.append(greencentres[i])
-            angles.append(greenangles[i])
-        for i in range(0,len(bluecentres)):
-            centres.append(bluecentres[i])
-            angles.append(blueangles[i])
-
-        cv2.imshow("IMAGE",cv_image)
-
-        global enableAnalyse
-        enableAnalyse = False
-
-        overallcentres = centres
-        centrepoints = []
-        for centre in overallcentres:
-            [x, y] = pixel_to_baxter(centre[0], centre[1])
-            #newcoords.append((x,y))
-            point = PointStamped()
-            point.header.frame_id = "right_hand_camera"
-            point.point.x = x
-            point.point.y = y
-            point.point.z = 0.45
-            centrepoints.append(point)
-
-        global pointlist
-        pointlist = []
-        # global collisionslist
-        # collisionslist = []
-        global anglelist
-        anglelist = []
+        cv2.imshow("mainimage3", cv_image)
 
 
-        for i in range(0,len(centrepoints)):
-            newpoint = tl.transformPoint("torso", centrepoints[i])
-            pointlist.append(newpoint)
-            anglelist.append(angles[i])
-
-        print anglelist
-
+    cv2.imshow("mainimage", cv_image)
     k = cv2.waitKey(1)
+
     global enableAnalyse
     enableAnalyse = False
-
-
-    pub = rospy.Publisher("pageCenre", PointStamped, queue_size=10)
-    pub.publish(PAGECENTREPOINT)
-
-
-def find_background(img):
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    #gray = cv2.bilateralFilter(hsv, 11, 17, 17)
-    edges = cv2.Canny(hsv,30,200,apertureSize = 3)
-    # DILATE EDGE LINES
-    kernel = np.ones((5,5),np.uint8)
-    dilation = cv2.dilate(edges,kernel,iterations = 1)
-    # FIND 10 LARGEST CONTOURS IN IMAGE
-    (cnts, _) = cv2.findContours(dilation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    cns = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
-    mask = np.zeros(img.shape[:2], dtype="uint8") * 25
-
-    global foundsquare, pageCentre, tl, PAGECENTREPOINT
-
-    foundsquare = False
-    # FIND RECTANGLE IN IMAGE AND SEGMENT - WHAT IF MULTIPLE RECTANGLES?
-    for cont in cns:
-        peri = cv2.arcLength(cont, True)
-        approx = cv2.approxPolyDP(cont, 0.02 * peri, True)
-        #cv2.drawContours(img, [cont], -1, (255,0,0), 3)
-        if len(approx) == 4:
-            if cv2.contourArea(cont) > 70000:
-                foundsquare = True
-                cv2.drawContours(mask, [cont], -1, 1, -1)
-
-                M = cv2.moments(cont)
-                cx = int(M['m10']/M['m00'])
-                cy = int(M['m01']/M['m00'])
-                [x, y] = pixel_to_baxter(cx, cy)
-                #newcoords.append((x,y))
-                point = PointStamped()
-                point.header.frame_id = "right_hand_camera"
-                point.point.x = x
-                point.point.y = y
-                point.point.z = 0.45
-                PAGECENTREPOINT = tl.transformPoint("torso", point)
-                pageCentre = [PAGECENTREPOINT.point.x, PAGECENTREPOINT.point.y, PAGECENTREPOINT.point.z]
-                print cv2.contourArea(cont)
-
-    #img = cv2.bitwise_and(img, img, mask=mask)
-
-    #cv2.imshow("squarecontours", img)
-
-    if (foundsquare == False):
-        print "sweet area is not found"
-
-    return mask, foundsquare
-
-def find_sweets(hsv, colour, r1, g1, b1, r2, g2, b2, area, size):
-    lower = np.array([r1,g1,b1])
-    upper = np.array([r2,g2,b2])
-
-    #cv2.imshow("HSV", hsv)
-
-    mask = cv2.inRange(hsv, lower, upper)
-
-    # filter and fill the mask
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(size, size))
-    mask2 = cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernel)
-
-    contour,hier = cv2.findContours(mask2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
-    sweetCount = 0
-    sweetcontours = []
-    sweetcentres = []
-
-    global collisions
-    collisions = "False"
-
-    sweetangles = []
-
-    for cnt in contour:
-        if (cv2.contourArea(cnt) > area):
-            if cv2.contourArea(cnt) < 1500:
-                rows,cols = hsv.shape[:2]
-                [vx,vy,x,y] = cv2.fitLine(cnt, cv2.cv.CV_DIST_L2,0,0.01,0.01)
-                lefty = int((-x*vy/vx) + y)
-                righty = int(((cols-x)*vy/vx)+y)
-                sweetangles.append(math.atan2(righty - lefty, cols-1 - 0))
-                # cv2.line(hsv,(cols-1,righty),(0,lefty),(0,255,0),2)
-                # print "Angle is ",rect[2]
-
-                cv2.drawContours(mask2, [cnt], 0, 255, 3)
-                sweetcontours.append(cnt)
-                sweetCount = sweetCount + 1
-                M = cv2.moments(cnt)
-                cx = int(M['m10']/M['m00'])
-                cy = int(M['m01']/M['m00'])
-                sweetcentres.append((cx, cy))
-
-    print "There are "+str(sweetCount)+" "+colour+" sweets"
-
-
-    #cv2.imshow("bluemask", mask2)
-
-    # return mask2, sweetcontours, sweetCount, sweetcentres, collisioncontours, collisionCount, collisionCentres, sweetangles
-
-    return mask2, sweetcontours, sweetCount, sweetcentres, sweetangles
-
-
-# convert image pixel to Baxter point
-def pixel_to_baxter(imagex, imagey):
-    # FROM CAMERA_INFO ROSTOPIC
-    # INTRINSIC CAMERA MATRIX (fx, 0, cx)
-                            # (0, fy, cy)
-                            # (0, 0, 1)
-    # K: [407.366831078, 0.0, 642.166170111, 0.0, 407.366831078, 387.185928717, 0.0, 0.0, 1.0]
-
-    fx = 407.366831078
-    fy = 407.366831078
-    cx = 642.166170111
-    cy = 387.185928717
-
-    # USING DISTANCE S FROM TABLE AND THE FACT THE 3D CAMERA COORD IS s*((u-cx)/fx, (v-cy)/fy, 1)
-
-    u = imagex
-    v = imagey
-    xl = (u - cx)/fx
-    yl = (v - cy)/fy
-
-    s = 0.45
-    x = xl * s
-    y = yl * s
-
-    return (x, y)
-
-def publish_sweet_handle(req):
-    print "request has string "+req.A
-    global centrelist, colourAmounts, pointlist, pageCentre
-    global anglelist
-    centrelist = []
-    # collisionCentre = []
-    for i in range(0, len(pointlist)):
-        centrelist.append(pointlist[i].point.x)
-        centrelist.append(pointlist[i].point.y)
-        centrelist.append(pointlist[i].point.z)
-    print colourAmounts
-    return RequestSweetInfoResponse(colourAmounts, centrelist, anglelist, pageCentre)
-
-def handle_reset_sweets(req):
-    print "Returning ",req.reset
-    global enableAnalyse
-    # rospy.sleep(4)
-    rospy.sleep(2)
-    enableAnalyse = True
-    while enableAnalyse == True:
-        rospy.sleep(1)
-    return LookForSweetsResponse("OK")
-
-global subscribeCounter
-subscribeCounter = 0
 
 #Subscribes to left hand camera image feed
 def main():
     rospy.sleep(10)
-    rospy.init_node('view_sweet_cam', anonymous = True)
+    rospy.init_node('view_collisions', anonymous = True)
 
-    # cv2.namedWindow('IMAGE', flags=0)
-    # cv2.namedWindow('HSV', flags=0)
-
-
-    # buffer_size = rospy.get_param("/cameras/right_hand_camera/buffer_size")
-    # rospy.Subscriber(image_topic, Image, callback,  queue_size = 1, buff_size=2**24)
-    global subscribeCounter
-    subscribeCounter = subscribeCounter + 1
-
+    global enableAnalyse
     if (enableAnalyse == True):
         image_topic = rospy.resolve_name("/cameras/right_hand_camera/image")
         # rospy.Subscriber(image_topic, Image, callback, queue_size = 1, buff_size=int(1024000))
         rospy.Subscriber(image_topic, Image, callback)
 
-    s = rospy.Service('publish_sweet_info', RequestSweetInfo, publish_sweet_handle)
+    #s = rospy.Service('publish_sweet_info', RequestSweetInfo, publish_sweet_handle)
 
-    t = rospy.Service('reset_sweets', LookForSweets, handle_reset_sweets)
+    #t = rospy.Service('reset_sweets', LookForSweets, handle_reset_sweets)
 
 
     #Keep from exiting until this node is stopped
