@@ -78,7 +78,7 @@ class PersonFinder:
                 self.personStayed = False
 
         # If person has been there for 50 frames then they want some sweets
-        if self.personFrame == 50:
+        if self.personFrame == 30:
             #print "PERSON ENTERED FRAME AND WANTS SWEETS"
             self.personStayed = True
 
@@ -104,13 +104,22 @@ class PersonFinder:
     # for a customer
     def person_request(self, req):
         # Reset background differencing on request
-        self.resetbackground = True
-        # Look for person to enter for 50 frames and wait until they do
-        while self.personStayed == False:
-            rospy.sleep(1)
-        self.personStayed = False
-        # Send a response back saying they have stayed in the view
-        return RequestPersonResponse("OK")
+        if (req.reset == "enter"):
+            self.resetbackground = True
+            # Look for person to enter for 50 frames and wait until they do
+            while self.personStayed == False:
+                rospy.sleep(1)
+            self.personStayed = False
+            # Send a response back saying they have stayed in the view
+            return RequestPersonResponse("OK")
+        if (req.reset == "exit"):
+            # Look for person to enter for 50 frames and wait until they do
+            self.personExists = True
+            while self.personExists == True:
+                rospy.sleep(1)
+            print "PERSON HAS EXITED THE CAMERA"
+            # Send a response back saying they have stayed in the view
+            return RequestPersonResponse("OK")
 
 # Main function
 if __name__ == '__main__':
