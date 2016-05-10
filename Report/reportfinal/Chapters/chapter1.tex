@@ -1,0 +1,114 @@
+\chapter{Objectives}
+\label{chapter1}
+\section{Objectives}
+After doing the appropriate research, some main objectives were laid out below as an initial order of tasks/features to implement:
+\begin{enumerate}
+    \item{Develop a vision system to recognise the container that the sweets are in and a manipulation method to retrieve them from the container.}
+    \item{Include a vision system to recognise the sweets in their environment and a manipulation method to separate/singulate sweets into the desired amounts.}
+    \item{Integrate methods of human interaction between Baxter and a customer to allow them to order some sweets from the shop.}
+    \item{Create a piece of software that would allow Baxter to implement all the previous steps into one integrated architecture. This would allow Baxter to interact with a customer in the sweet shop and give them whatever sweets they asked for.}
+\end{enumerate}
+%\begin{enumerate}
+%    \item{Develop a vision system to allow Baxter to recognise sweets and the container they are in}
+%    	\begin{enumerate}
+%		\item{Deliverables - Software to allow Baxter to be able to identify and locate a bowl and individual sweet shapes/colours (depending on the recognition method). A section on the report comparing vision methods and deciding the most appropriate one to use.} 
+%		\item{Provide a section in the results section of the report showing the successful recognition of the objects by Baxter visualized using rViz/images.}
+%	\end{enumerate}	
+%    \item{Develop an algorithm for the singulation of sweets}
+%    	\begin{enumerate}
+%		\item{Deliverables - Code to allow Baxter to singulate specified sweets from a bowl. A section on the report comparing sweet singulation algorithms, determining which one was the most efficient to use.}
+%		\item{Provide results from the sweet singulation algorithm running in different environments and scenarios.}
+%	\end{enumerate}	
+%    \item{Develop a method for Baxter to manipulate and count out change}
+%    	\begin{enumerate}
+%		\item{Deliverables - code allowing Baxter to identify and recognise certain coins/notes and then being able to manipulate the money to grab a particular amount.}
+%		\item{Provide results in the report from the money manipulation algorithm running in 		various environments.}
+%	\end{enumerate}	
+%    \item{Develop a method of Human-Interaction}
+%    	\begin{enumerate}
+%		\item{Deliverables - code allowing Baxter to interact with a human customer and 		recognise some way of telling which sweets the human wants.}
+%		\item{Provide evidence of different methods of robot-human interaction tested in the 		report and an analysis on which method works best.}
+%	\end{enumerate}	
+%\end{enumerate}
+
+
+\section{Methodology}
+Since this project involved a lot of different areas of robotics integrated into one system, a somewhat modular approach had to be taken. It was decided that each area (vision, manipulation, human interaction) would be developed in a sequence. The method therefore has a very testing-centric agile approach, where for a task, there would be planning for multiple approaches, development sessions and then testing. Once an efficient solution had been found (determined with testing), the next task could then start being developed. Since the methodology was so linear, by looking at the large amount of tasks in the \hyperref[sec:gantt]{\textbf{Gantt chart}} to complete, multiple contingencies had to be taken to make sure that certain tasks didn't take too long or were too complex.\newline\newline
+As you can see from the \hyperref[sec:gantt]{\textbf{Gantt chart}}, there are multiple target versions for the project, in case some tasks run over their time limit. The basic solution was aimed to be complete in 6 weeks, but the tasks for version 1 and 2 could've been seen as extra objectives if there wasn't time to implement them all. Another contingency would also be the heavy planning and supervisor discussions before each task, meaning I knew what to read beforehand and some of the common approaches to solving each problem.
+\section{Gantt Chart}
+\label{sec:gantt}
+\definecolor{barblue}{RGB}{153,204,254}
+\definecolor{groupblue}{RGB}{51,102,254}
+\definecolor{linkred}{RGB}{165,0,33}
+\begin{ganttchart}[
+    canvas/.append style={fill=none, draw=black!5, line width=.75pt},
+    hgrid style/.style={draw=black!5, line width=.75pt},
+    vgrid={*1{draw=black!5, line width=.75pt}},
+    title/.style={draw=none, fill=none},
+    title label font=\bfseries\footnotesize,
+    title label node/.append style={below=7pt},
+    x unit =0.7cm,
+    include title in canvas=false,
+    bar label font=\mdseries\small\color{black!70},
+    bar label node/.append style={left=2cm},
+    bar/.append style={draw=none, fill=black!63},
+    bar incomplete/.append style={fill=barblue},
+    bar progress label font=\mdseries\footnotesize\color{black!70},
+    group incomplete/.append style={fill=groupblue},
+    group left shift=0,
+    group right shift=0,
+    group height=.5,
+    group peaks tip position=0,
+    group label node/.append style={left=.6cm},
+    group progress label font=\bfseries\small,
+    link/.style={-latex, line width=1.5pt, linkred},
+    link label font=\scriptsize\bfseries,
+    link label node/.append style={below left=-2pt and 0pt}
+  ]{1}{12}
+  \gantttitle[
+    title label node/.append style={below left=7pt and -3pt}
+  ]{WEEKS:\quad1}{1}
+  \gantttitlelist{2,...,12}{1} \\
+  \ganttgroup[]{Version 0: Basic Solution}{1}{5} \\
+  \ganttbar[
+    name=WBS1A
+  ]{\textbf{Project Setup}}{1}{1} \\
+  \ganttbar[
+    name=WBS1B
+  ]{\textbf{Setup Kinect Recognition}}{2}{4} \\
+  \ganttbar[
+    name=WBS1C
+  ]{\textbf{Sweet Singulation}}{4}{5} \\[grid]
+  \ganttgroup{Version 1: Main Solution}{6}{9} \\
+  \ganttbar{\textbf{Human Interaction}}{6}{7} \\
+  \ganttbar{\textbf{Money Manipulation}}{8}{9} \\
+  \ganttgroup{Version 2: Project Completion}{10}{12} \\
+  \ganttbar{\textbf{Extra Features}}{10}{12} \\
+  \ganttbar{\textbf{Report Completion}}{10}{12} \\[grid]
+  \ganttgroup{Project Report}{1}{12} \\
+\end{ganttchart}
+Here are each of the tasks explained in more detail:\newline
+\begin{itemize}
+\item{\textbf{Project setup} - Setup the ROS system and look learn the basics of the software. Complete ROS and Baxter tutorials and make some example programs to test and move Baxter in different ways.}
+\item{\textbf{Setup Kinect recognition} - Setup the Kinect with Baxter and look into different computer vision methods to recognise the bowl and sweets and their positions in 3D space.}
+\item{\textbf{Sweet singulation} - Trial multiple object manipulation algorithms to allow Baxter to grab and select specified sweet combinations.}
+\item{\textbf{Human interaction} - Create some form of human interaction between Baxter and a human to allow the human to ask for specific sweets. This could be gestures or voice control based.}
+\item{\textbf{Money Manipulation} - Develop some vision system to recognise paper money or change and then work on algorithms for Baxter to handle/count out money to give to a person.}
+\item{\textbf{Extra Features} - Allow time to further improve upon previous steps or pick one dedicated topic to further go into and develop.}
+\item{\textbf{Report Completion} - Allow the last three weeks to further improve upon the project report.}
+\item{\textbf{Project Report} - At each week, take a look at project report deadlines that need to be met. Make sure parts of the report are written at the time they are completed.}
+\end{itemize}
+\section{Changes from the Initial Plan}
+The  \hyperref[sec:gantt]{\textbf{Gantt chart}} above, whilst reasonably useful to lay out the project, there were multiple flaws that were found throughout the time spent on it. Firstly, as you can see, there were multiple tasks that only allowed 2 weeks to complete, where that time would have to include planning, research, coding and testing. This was unrealistic for some tasks as they either were more complex than anticipated or there were unexpected technological issues that added more time on overall. 
+\newline\newline
+The vision tasks had a lot more challenges and issues than initially expected, so a lot of time had to be allowed for them. Manipulation tasks, whilst they were a bit quicker to develop, physically testing those took longer, as the manipulation tasks had to run many times to record the results.
+\newline\newline
+As predicted, the tasks in version 1 and 2 could not be fully completed due to time restraints. Therefore, human interaction only was done partially and money manipulation was too complex of a task to implement in the time I had left. Therefore, looking back, it would have been better to remove that task and make some of the previous tasks allow three weeks of time instead of two to get a higher quality solution.
+\newline\newline
+In general however, the Gantt Chart did a reasonably good job of laying out a basic plan. Whilst some tasks took longer than expected, some took a shorter amount of time, so the task times tended to average out. The idea to research, plan and discuss before starting each task really helped speed-wise, allowing a focused approach to be used on each. By the end of the project, a reliable piece of software had been produced that included a large percentage of the planned tasks and others that weren't even considered before. Other changes to the objectives and planning are explained in the later sections of the report.
+\section{Determining the Quality of the Solution}
+The quality of the solution could be determined by the testing of each stage of the
+project. The idea of this approach meant that once each feature was implemented into the system, it could be tested to determine its efficiency. If the efficiency of the feature was not high enough, then that feature could be re-implemented via another method. By doing this testing for each feature, it meant that by the end of the project, when integrating the whole system together, the system would be reliable enough to be a reasonably robust piece of software. After the testing of methods and determining when one was efficient enough to include in the final system, it was decided the results of those tests would be used for evidence and deliverables to be included in the report.
+\newline\newline
+To determine the quality and efficiency of the final system, it was decided that human testing would be the most appropriate way to do this. If you could test the system with multiple people walking up to Baxter and ordering their sweets, the quality of the solution would be determined by how many interactions produced the desired request and how many had errors.
+\let\cleardoublepage\clearpage

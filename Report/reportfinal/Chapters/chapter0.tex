@@ -1,0 +1,63 @@
+\chapter{The Problem}
+\setcounter{page}{1}
+\label{chapter0}
+The main task for this project was to develop a method for a Baxter robot to run a sweet shop and serve customers. This task was not as simple as it sounds, as it involved multiple computing areas and many practical issues along the way. Overall, a satisfying product was made that allowed Baxter to interact with a customer, listen for what they want and give them the required sweets. Throughout this report, I will discuss the process in which the project was developed, from initial conceptions to the final product.
+\section{Aim}
+The overall aim of this project was to produce a piece of software using the robot operating system (ROS) that would allow Baxter to interact with people and give them sweets within a sweet shop setting. The personal aim of this project was to learn the algorithms and software systems used in autonomous systems whilst doing the project. Practically, the aim was to allow the School of Computing to be able to use this system as an interactive demonstration on Open Days.
+\section{System Logic}
+This project was a hugely ambitious one, with an infinite number of approaches and solutions to each part of the interaction. To split the project into a series of simpler steps, an example interaction between Baxter and the customer was proposed. To develop the system logic, it was easier to look at the simple interactions needed between a shopkeeper and their customer. Firstly, human interaction would determine what sweets the shopkeeper would need to get. Secondly, the shopkeeper would get some sweets from the bowl and individually pick out the ones the customer wanted. The shopkeeper would give those sweets to the customer and then ask for payment of some sort to complete the interaction. During the development of the project, more clear and precise logic steps came from development, shown in the \hyperref[ch:flowchart]{\textbf{Flow Chart}} below.
+\section{Approach}
+To develop an initial approach for the project development, the plan was to separate the shopkeeper-customer interaction into separate areas of research. With the perception of the environment and looking for objects, machine vision was important. Robotic manipulation techniques were important for Baxter's manipulation of the different objects - the bowl and the sweets. Human interaction was important to help make the experience more believable. All these areas were further researched before moving on to separating the project into different tasks, as explained in further chapters.
+\section{Flow Chart}
+\label{ch:flowchart}
+% Define block styles
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=10em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=10em, text centered, rounded corners, minimum height=2em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    maximum height=2em]
+    
+\begin{tikzpicture}[node distance = 2cm, auto]
+    % Place nodes
+    \node [block] (init) {Baxter sees customer and listens for command};
+    \node [block, right of=init] (hearddecision) [xshift=4.0cm] {Is command received and understood?};
+    \node [block, right of=hearddecision] (bowllook) [xshift=4.0cm] {Look for sweet bowl};
+    \node [block, below of=bowllook] (bowlgrab) [yshift=-1.0cm]{Tilt sweets from bowl onto table};
+    \node [block, below of=hearddecision] (sweetlook) [yshift=-1.0cm]{Look at the sweets on the table};
+    \node [block, below of=init] (sweetdecision) [yshift=-1.0cm]{Are there enough sweets on the table for the customer?};
+    \node [block, below of=init] (sweetdecision) [yshift=-1.0cm]{Are there enough sweets on the table for the customer?};
+    \node [block, below of=sweetdecision] (grabsweet) [yshift=-1.0cm]{Grab a correct sweet and hold out to give to customer};
+    \node [block, below of=sweetlook] (handdecision) [yshift=-1.0cm]{Is the customer holding their hand out to receive the sweet?};
+    \node [block, below of=bowlgrab] (givesweet) [yshift=-1.0cm]{Give customer sweet};
+    \node [block, below of=givesweet] (alldonedecision) [yshift=-1.0cm]{Has the customer received all the sweets they wanted?};
+    \node [block, below of=handdecision] (complete) [yshift=-1.0cm]{Transaction Complete};
+
+%    \node [block, rjght of=sweetlook] (sweetdecision) [yshift=-1.5cm] {Are there enough sweets on the table for the customer?};
+%        \node [block, right of=sweetdecision] (separated) [xshift=10.0cm]{Are the sweets separated on the table enough to grab properly?};
+%
+
+%
+%    
+%    \node [block, below of=init] (identify) {identify candidate models};
+%    \node [block, below of=identify] (evaluate) {evaluate candidate models};
+%    \node [block, left of=evaluate, node distance=3cm] (update) {update model};
+%    \node [decision, below of=evaluate] (decide) {is best candidate better?};
+%    \node [block, below of=decide, node distance=3cm] (stop) {stop};
+    % Draw edges
+     \path [line] (init) -- (hearddecision);
+     \path [line] (hearddecision) -- node[anchor=north] {no}(init);
+     \path [line] (hearddecision) -- node {yes}(bowllook);
+     \path [line] (bowllook) -- node {Using Bowl Position}(bowlgrab);
+     \path [line] (bowlgrab) -- (sweetlook);
+     \path [line] (sweetlook) -- (sweetdecision);
+     \path [line] (sweetdecision) -- node{no}(bowllook);
+     \path [line] (sweetdecision) -- node{yes}(grabsweet);
+     \path [line] (grabsweet) -- (handdecision);
+     \path [line] (handdecision) -- node{yes}(givesweet);
+     \path [line] (givesweet) -- (alldonedecision);
+     \path [line] (alldonedecision) -- node{no}(grabsweet);
+     \path [line] (alldonedecision) -- node{yes}(complete);
+
+\end{tikzpicture}

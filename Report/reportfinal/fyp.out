@@ -1,0 +1,77 @@
+\BOOKMARK [0][-]{chapter.1}{The Problem}{}% 1
+\BOOKMARK [1][-]{section.1.1}{Aim}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{System Logic}{chapter.1}% 3
+\BOOKMARK [1][-]{section.1.3}{Approach}{chapter.1}% 4
+\BOOKMARK [1][-]{section.1.4}{Flow Chart}{chapter.1}% 5
+\BOOKMARK [0][-]{chapter.2}{Background And Literature Review}{}% 6
+\BOOKMARK [1][-]{section.2.1}{Robotic Behaviour}{chapter.2}% 7
+\BOOKMARK [1][-]{section.2.2}{Machine Vision}{chapter.2}% 8
+\BOOKMARK [2][-]{subsection.2.2.1}{Image Segmentation Techniques}{section.2.2}% 9
+\BOOKMARK [2][-]{subsection.2.2.2}{Pointcloud Analysis}{section.2.2}% 10
+\BOOKMARK [1][-]{section.2.3}{Manipulation Planning}{chapter.2}% 11
+\BOOKMARK [2][-]{subsection.2.3.1}{Inverse Kinematics and Planning}{section.2.3}% 12
+\BOOKMARK [2][-]{subsection.2.3.2}{Grasping Methods}{section.2.3}% 13
+\BOOKMARK [1][-]{section.2.4}{Planning Under Clutter}{chapter.2}% 14
+\BOOKMARK [1][-]{section.2.5}{Interacting with People}{chapter.2}% 15
+\BOOKMARK [0][-]{chapter.3}{Objectives}{}% 16
+\BOOKMARK [1][-]{section.3.1}{Objectives}{chapter.3}% 17
+\BOOKMARK [1][-]{section.3.2}{Methodology}{chapter.3}% 18
+\BOOKMARK [1][-]{section.3.3}{Gantt Chart}{chapter.3}% 19
+\BOOKMARK [1][-]{section.3.4}{Changes from the Initial Plan}{chapter.3}% 20
+\BOOKMARK [1][-]{section.3.5}{Determining the Quality of the Solution}{chapter.3}% 21
+\BOOKMARK [0][-]{chapter.4}{Materials and Software}{}% 22
+\BOOKMARK [1][-]{section.4.1}{The Robot}{chapter.4}% 23
+\BOOKMARK [1][-]{section.4.2}{Kinect}{chapter.4}% 24
+\BOOKMARK [1][-]{section.4.3}{Software}{chapter.4}% 25
+\BOOKMARK [2][-]{subsection.4.3.1}{OpenCV}{section.4.3}% 26
+\BOOKMARK [2][-]{subsection.4.3.2}{PCL Library}{section.4.3}% 27
+\BOOKMARK [1][-]{section.4.4}{ROS}{chapter.4}% 28
+\BOOKMARK [2][-]{subsection.4.4.1}{RViz}{section.4.4}% 29
+\BOOKMARK [2][-]{subsection.4.4.2}{Fixed Frame Transforms}{section.4.4}% 30
+\BOOKMARK [2][-]{subsection.4.4.3}{Custom Service Requests}{section.4.4}% 31
+\BOOKMARK [1][-]{section.4.5}{Github Repository}{chapter.4}% 32
+\BOOKMARK [0][-]{chapter.5}{Methods}{}% 33
+\BOOKMARK [1][-]{section.5.1}{The Bowl}{chapter.5}% 34
+\BOOKMARK [2][-]{subsection.5.1.1}{Recognition}{section.5.1}% 35
+\BOOKMARK [3][-]{subsubsection.5.1.1.1}{Segmentation and Recognition}{subsection.5.1.1}% 36
+\BOOKMARK [3][-]{subsubsection.5.1.1.2}{Testing}{subsection.5.1.1}% 37
+\BOOKMARK [2][-]{subsection.5.1.2}{Manipulation}{section.5.1}% 38
+\BOOKMARK [3][-]{subsubsection.5.1.2.1}{Scooping Methods}{subsection.5.1.2}% 39
+\BOOKMARK [3][-]{subsubsection.5.1.2.2}{Scooping Tests}{subsection.5.1.2}% 40
+\BOOKMARK [3][-]{subsubsection.5.1.2.3}{Tipping Methods}{subsection.5.1.2}% 41
+\BOOKMARK [3][-]{subsubsection.5.1.2.4}{Tipping Tests}{subsection.5.1.2}% 42
+\BOOKMARK [1][-]{section.5.2}{The Sweets}{chapter.5}% 43
+\BOOKMARK [2][-]{subsection.5.2.1}{Recognition}{section.5.2}% 44
+\BOOKMARK [3][-]{subsubsection.5.2.1.1}{Sweet Background Detection}{subsection.5.2.1}% 45
+\BOOKMARK [3][-]{subsubsection.5.2.1.2}{Sweet Recognition}{subsection.5.2.1}% 46
+\BOOKMARK [3][-]{subsubsection.5.2.1.3}{Testing}{subsection.5.2.1}% 47
+\BOOKMARK [2][-]{subsection.5.2.2}{Manipulation}{section.5.2}% 48
+\BOOKMARK [3][-]{subsubsection.5.2.2.1}{Grabbing Methods}{subsection.5.2.2}% 49
+\BOOKMARK [3][-]{subsubsection.5.2.2.2}{Testing}{subsection.5.2.2}% 50
+\BOOKMARK [2][-]{subsection.5.2.3}{Singulation}{section.5.2}% 51
+\BOOKMARK [3][-]{subsubsection.5.2.3.1}{Detecting Overlaps}{subsection.5.2.3}% 52
+\BOOKMARK [3][-]{subsubsection.5.2.3.2}{Singulation Methods}{subsection.5.2.3}% 53
+\BOOKMARK [1][-]{section.5.3}{Human Interaction}{chapter.5}% 54
+\BOOKMARK [2][-]{subsection.5.3.1}{Voice Recognition}{section.5.3}% 55
+\BOOKMARK [3][-]{subsubsection.5.3.1.1}{Python's NLTK}{subsection.5.3.1}% 56
+\BOOKMARK [3][-]{subsubsection.5.3.1.2}{Android's Google Voice Recognition}{subsection.5.3.1}% 57
+\BOOKMARK [3][-]{subsubsection.5.3.1.3}{Testing}{subsection.5.3.1}% 58
+\BOOKMARK [2][-]{subsection.5.3.2}{Customer Recognition}{section.5.3}% 59
+\BOOKMARK [3][-]{subsubsection.5.3.2.1}{Detect Person}{subsection.5.3.2}% 60
+\BOOKMARK [3][-]{subsubsection.5.3.2.2}{Skeleton Recognition}{subsection.5.3.2}% 61
+\BOOKMARK [2][-]{subsection.5.3.3}{Human Characteristics}{section.5.3}% 62
+\BOOKMARK [3][-]{subsubsection.5.3.3.1}{Speech System}{subsection.5.3.3}% 63
+\BOOKMARK [3][-]{subsubsection.5.3.3.2}{Facial Expressions}{subsection.5.3.3}% 64
+\BOOKMARK [0][-]{chapter.6}{The Integrated System}{}% 65
+\BOOKMARK [1][-]{section.6.1}{Feature Integration}{chapter.6}% 66
+\BOOKMARK [2][-]{subsection.6.1.1}{Roslaunch Files}{section.6.1}% 67
+\BOOKMARK [2][-]{subsection.6.1.2}{System Logic}{section.6.1}% 68
+\BOOKMARK [2][-]{subsection.6.1.3}{User Setup}{section.6.1}% 69
+\BOOKMARK [1][-]{section.6.2}{Integrated System Images}{chapter.6}% 70
+\BOOKMARK [1][-]{section.6.3}{Evaluating the System}{chapter.6}% 71
+\BOOKMARK [1][-]{section.6.4}{Limitations/Improvements}{chapter.6}% 72
+\BOOKMARK [1][-]{section.6.5}{Project Reflection}{chapter.6}% 73
+\BOOKMARK [0][-]{section.6.5}{References}{}% 74
+\BOOKMARK [0][-]{section*.4}{Appendices}{}% 75
+\BOOKMARK [0][-]{Appendix.1.A}{External Materials}{}% 76
+\BOOKMARK [0][-]{Appendix.1.B}{Ethical Issues Addressed}{}% 77
