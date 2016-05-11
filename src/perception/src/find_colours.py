@@ -410,7 +410,7 @@ def callback(message):
                                 splitcontours.append(cont)
 
 
-
+        # TRAL METHOD FOR VISION GRIPPER APPROACH
         #
         # for split in splitcontours:
         #     rows,cols = cv_image.shape[:2]

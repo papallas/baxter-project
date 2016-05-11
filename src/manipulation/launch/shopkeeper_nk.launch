@@ -19,17 +19,11 @@
 <node pkg="baxter_tools" type="camera_control.py" name="head_camera_setup" args="-o head_camera -r 480x300"/>
 <node pkg="baxter_tools" type="tuck_arms.py" name="tuck_arms" args="-u"/>
 
-<!-- Run the shopkeeper node with Kinect -->
-<node pkg="manipulation" type="robot_shopkeeper.py" name="shopkeeper" output="screen"/>
+<!-- Run the shopkeeper node without Kinect -->
+<node pkg="manipulation" type="robot_shopkeeper_nk.py" name="shopkeeper" output="screen"/>
 
 <!-- Run the vision system to detect the sweets on the page -->
 <node pkg="perception" type="find_colours.py" name="find_sweets"/>
-
-<!-- Run the bowl vision system to detect the bowl on the table -->
-<node pkg="perception" type="find_bowl.cpp" name="find_bowl"/>
-<node pkg="perception" type="average_bowl_pos.cpp" name="average1"/>
-<node pkg="perception" type="second_average.cpp" name="cumulative_average"/>
-<node pkg="manipulation" type="bowl_pos_transform.cpp" name="transform_bowl_pos"/>
 
 <!-- Run the human interaction system listen for commands and recognise customers -->
 <node pkg="interaction" type="app_server.py" name="app_server" output="screen"/>

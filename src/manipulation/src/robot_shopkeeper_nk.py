@@ -231,6 +231,7 @@ class ShopKeeper:
     # Function for Baxter to move to grab the bowl - requires an x, y and z
     # for the current bowl coordinates
     def move_to_grab_bowl(self, x, y, z):
+        self.left_interface.set_joint_position_speed(0.3)
         # Move to the left side of the bowl
         self.move_and_rotate("left", x, y+0.05, -0.15, self.left_pose[3], self.left_pose[4], self.left_pose[5])
         # Tilt the arm and move down diagonally to get in position
@@ -258,7 +259,7 @@ class ShopKeeper:
     def tip_bowl(self, x, y, z, pagex, pagey, initialtilt, height):
         # Grab the bowl once it is in position
         self._left_grip.close()
-        self.left_interface.set_joint_position_speed(0.2)
+        self.left_interface.set_joint_position_speed(0.3)
         # Rotate the arm to a more horizontal position (only if first time)
         if (initialtilt == True):
             self.move_and_rotate("left", self.left_pose[0], self.left_pose[1], -0.1,
@@ -268,7 +269,7 @@ class ShopKeeper:
             self.left_pose[3],self.left_pose[4],self.left_pose[5])
 
 
-        self.left_interface.set_joint_position_speed(0.1)
+        self.left_interface.set_joint_position_speed(0.2)
         # Move to the right hand side of the page
         self.move_and_rotate("left", pagex-0.21, pagey-0.1, self.left_pose[2]+0.05,
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
@@ -287,12 +288,15 @@ class ShopKeeper:
         self.move_and_rotate("left", self.left_pose[0]-0.05, self.left_pose[1],
         self.left_pose[2]-0.2, self.left_pose[3],self.left_pose[4],self.left_pose[5]+0.2)
 
+        self.left_interface.set_joint_position_speed(0.2)
         # Move to the left hand side of the page
         self.move_and_rotate("left", pagex-0.21, pagey+0.08, self.left_pose[2],
         self.left_pose[3],self.left_pose[4],self.left_pose[5])
         # Rotate slightly further than the last tip
         self.rotate_gripper_angle(-0.1)
         self.update_left()
+
+        self.left_interface.set_joint_position_speed(0.9)
         # Shake the bowl diagonally again
         self.move_and_rotate("left", self.left_pose[0]+0.05, self.left_pose[1],
         self.left_pose[2]+0.2, self.left_pose[3],self.left_pose[4],self.left_pose[5]-0.2)
@@ -303,7 +307,7 @@ class ShopKeeper:
         self.rotate_gripper_angle(1.2+(height*0.2))
         self.update_left()
 
-        self.left_interface.set_joint_position_speed(0.1)
+        self.left_interface.set_joint_position_speed(0.2)
         # Move the bowl back to the left of the page and lower - keep
         # hold of the bowl for further tilts
         self.move_and_rotate("left", x, y-+0.01, self.left_pose[2],
@@ -328,7 +332,7 @@ class ShopKeeper:
     # Pick up a sweet on the page, given it's required colour, PCA angle, xyz
     # centre and the page centre
     def move_and_pick_up_sweet(self, colour, angle, x, y, z, pagex, pagey):
-        self.right_interface.set_joint_position_speed(0.3)
+        self.right_interface.set_joint_position_speed(0.5)
         # Standard gripper rotation in radians
         defaultrotation = -2.8676
         # Rotate by 90 degrees to go perpendicular then subtract the angle
@@ -344,10 +348,12 @@ class ShopKeeper:
         self.right_pose[3],self.right_pose[4],overall)
 
         self.right_interface.set_joint_position_speed(0.1)
-        self.move_and_rotate("right", x, y, -0.215,
+        self.move_and_rotate("right", x, y, self.MINZ+0.002,
         self.right_pose[3],self.right_pose[4],self.right_pose[5])
 
         self._right_grip.close()
+
+        self.right_interface.set_joint_position_speed(0.5)
 
         self.move_and_rotate("right", self.right_pose[0], self.right_pose[1], 0,
         self.right_pose[3],self.right_pose[4],self.right_pose[5])
@@ -355,8 +361,6 @@ class ShopKeeper:
         # If Baxter managed to grip the current sweet:
         if self.gripped == True:
             # Move to the right of the page and drop the sweet in the bag
-            self.right_interface.set_joint_position_speed(0.3)
-
             self.move_and_rotate("right", self.bag[0], self.bag[1], self.bag[2],
             self.bag[3], self.bag[4], self.bag[5])
 
@@ -497,6 +501,7 @@ class Communications:
                      'right_w0': -0.02569417819708068, 'right_w1': 0.8421554525490922, \
                      'right_w2': 0.30104372962251247}
 
+        self.baxter.right_interface.set_joint_position_speed(0.5)
         self.baxter.right_interface.move_to_joint_positions(positions)
         # Move the head to the right to look for customers
         self.baxter.head.set_pan(-0.5)
@@ -534,39 +539,48 @@ if __name__ == '__main__':
 
     # Subscribe to the right gripper's state to detect torque changes
     rospy.Subscriber("/robot/end_effector/right_gripper/state", EndEffectorState,
-                                                            baxter.gripperholding)
+                                                          baxter.gripperholding)
 
-    # SETUP TASKS
-
+    # Use default face to start
     send_image('bored')
 
+    #############################################################################
+    # SYSTEM SETUP TASKS - TERMINAL HELPS USER SETUP THE PROGRAM BEFORE RUNNING #
+    #############################################################################
 
     # Move to the sweet area before the sweet vision system can be initialised
-    # and reset the vision system before retrieving the info
+    # and reset retrieve the initial page location etc
     baxter.moveToSweets()
-
     comms.reset_sweets()
 
-    # DEFAULT BOWL CORNER VALUE
-    [x,y,z] = [0.6,0.25, -0.2]
+    # A hard coded bowl value is used without the Kinect
+    [bowlX,bowlY,bowlZ] = [0.6,0.25, -0.2]
+    # Make baxter move where the bowl should be to help in setup
+    baxter.move_to_grab_bowl(bowlX , bowlY, bowlZ)
 
-    baxter.move_to_grab_bowl(x, y, z)
+    # Print setup command prompts, with user inputting enter to wait for setup
+    # tasks being complete
     print "Make sure the app is open and the IP address on the terminal is \
 entered on the android device\n\n"
     print "Place the bowl of sweets so the left rim of the bowl is between \
 Baxter's gripper\n\n"
     raw_input("Press Enter when this step is complete...\n\n")
 
-    print "Place the left gripper so it is touching the table and the right gripper \
-so it is above the sweet bag/container\n\n"
-
+    print "Place the left gripper so it is touching the table and the right \
+gripper so it is above the sweet bag/container\n\n"
     raw_input("Press Enter when this step is complete...\n\n")
+
+    # After the user moves the arms, get the current z height of the left to be
+    # used as the program's table height value
     leftpose = baxter.get_pose("left")
     baxter.MINZ = leftpose[2]
+    # Get the right arm's position as the one used to drop sweets into the bag
     baxter.bag = baxter.get_pose("right")
 
     print "The setup is now complete"
 
+    # Move the left arm back to normal untucked position
+    baxter.left_interface.set_joint_position_speed(0.5)
     baxter.move_and_rotate("left", 0.5815, 0.1831, 0.1008, 3.1209, 0.0492, 2.8580)
 
     # PRINT INTRO TO TERMINAL
@@ -581,21 +595,24 @@ so it is above the sweet bag/container\n\n"
     # THIS IS THE MAIN SHOP LOOP THAT WILL BE RUN CONSTANTLY AFTER LAUNCHING
     while True:
         send_image('bored')
-        # First of all, wait for a customer approaches
+        # First of all, wait for a customer approaches, specifying enter to
+        # check for customer entry
         print "Waiting for a customer to approach...\n"
         comms.wait_for_person("enter")
+        # Once the person has entered, change to happy face and speak to
+        # acknowledge their appearance
         send_image('default')
-
         baxter.speak('Hello, welcome to my shop.')
         print "Hello customer, welcome to my shop, what sweets would you like \
 today?"
 
-        # Request and wait for the customer's order
+        # Inform the user to provide a voice/touch request on the application
         baxter.speak('What sweets would you like today')
-
         baxter.speak('Speak after the beep and press the place order button to confirm')
-        rospy.sleep(11)
+        rospy.sleep(9)
 
+        # Get the application user command and assign the requested amounts
+        # to variables
         command = comms.get_app_command()
         blueRequest = command[0]
         greenRequest = command[2]
@@ -603,23 +620,27 @@ today?"
         print"You want ",blueRequest," blue sweets, ",greenRequest," green sweets \
 and ",redRequest," red sweets"
 
+        # Move the right arm to view the sweets on the table to make sure
+        # some aren't already left from last time
         baxter.moveToSweets()
         comms.reset_sweets()
         num, centres, anglelist, centrepage = comms.get_sweet_client()
 
+        # Count variable - on the initial run the arm needs to move to grab the
+        # bowl, otherwise it can just grab the bowl
         count = 0
+        # This loop runs until there are enough sweets on the page for the request
         while (num[2] < blueRequest or num[1] < greenRequest or num[0] < redRequest):
+            # Move to and then grab and tilt the bowl twice on the table
             if count == 0:
-                # MOVE IN POSITION TO GRAB THE BOWL
-                baxter.move_to_grab_bowl(x, y, z)
-                baxter.tip_bowl(x, y, z, page[0], page[1], True, count)
+                baxter.move_to_grab_bowl(bowlX , bowlY, bowlZ)
+                baxter.tip_bowl(bowlX , bowlY, bowlZ, page[0], page[1], True, count)
             else:
-                baxter.tip_bowl(x, y, z, page[0], page[1], False, count)
+                baxter.tip_bowl(bowlX , bowlY, bowlZ, page[0], page[1], False, count)
             count = count + 1
 
             baxter._right_grip.open()
             baxter.moveToSweets()
-
             comms.reset_sweets()
             num, centres, anglelist, centrepage = comms.get_sweet_client()
 
@@ -629,8 +650,6 @@ and ",redRequest," red sweets"
                 print str(num[1]), " green sweets found on the table"
             if (num[2] != 0):
                 print str(num[2]), " blue sweets found on the table"
-            # if (collisionNum != 0):
-            #     print str(collisionNum),"collisions of sweets"
 
             if (num[2] >= blueRequest and num[1] >= greenRequest and num[0] >= redRequest):
                 print "Total number of sweets is greater than request"
@@ -638,11 +657,12 @@ and ",redRequest," red sweets"
 
             baxter._right_grip.open()
 
+        # If all the requested sweets are found, drop the bowl and move the arm
+        # away
         baxter._left_grip.open()
-
+        baxter.left_interface.set_joint_position_speed(0.5)
         baxter.move_and_rotate("left", 0.5815, 0.1831, 0.1008, 3.1209, 0.0492, 2.8580)
 
-        numGiven = 0
 
         while baxter.redGiven < redRequest:
             points = []
