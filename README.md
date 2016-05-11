@@ -28,9 +28,7 @@ To set up the shop for Baxter, you need five main items.
 
 5. An Android device is needed, which will have the voice recognition application installed on it, discussed later on.
 
-![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/bowl.jpg) ![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/bag.jpg) 
-
-![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/paper.jpg)![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/orientation.jpg)
+![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/materialsresized.jpg)
 
 To orient these items, the bowl should be somewhere to the left of the page (if you aren't using a Kinect, you can place it in position after running). The page should be placed in the middle and the sweet container can be anywhere within Baxter's right gripper's reach. In practice, it seemed easy to place it on the right of the page.
 
@@ -72,7 +70,7 @@ To then run the system with the Kinect, launch the alternative roslaunch file:
 
 This should launch the whole system. Make sure none of the nodes display any errors in the terminal at this point, aside from the camera commands may display an error (depending on which two of Baxter's cameras are currently open).
 
-Then, on screen, you can follow the commands (printed on the terminal) in order:
+Then, on screen, you can follow the commands (printed on the terminal) in order. For examples images, see the setup above.
 
 1. Make sure you open the Android app on the device (make sure it is fully closed first), and enter the IP address shown in the terminal.
 
