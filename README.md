@@ -16,7 +16,19 @@ First of all, following ROS tutorials, create a catkin workspace to add packages
 
 ## Materials
 
-To set up the shop for Baxter
+To set up the shop for Baxter, you need five main items. 
+
+1. Firstly, in this project, blue, red and green Quality Street sweets were used. Whilst similar coloured sweets may work in place of this, the colour recognition may not be as accurate for them.
+
+2. Secondly, you need a small, white polystyrene bowl to hold the sweets, available in most shops/supermarkets. In this bowl, place 4 green, 4 blue and 4 red sweets.
+
+3. Thirdly, a piece of A2 paper (or two A3 pieces stuck together) is needed, with a thick black border drawn around it. This paper needs to be stuck in the centre of the table, the closer Baxter, the more preferrable.
+
+4. Next, a container is needed for Baxter to drop the sweets into, one large enough that he can hold his gripper over them and drop from a height. It may be an idea to weight the bag slightly so it doesn't move about the table once placed.
+
+5. An Android device is needed, which will have the voice recognition application installed on it, discussed later on.
+
+To orient these items, the bowl should be somewhere to the left of the page (if you aren't using a Kinect, you can place it in position after running). The page should be placed in the middle and the sweet container can be anywhere within Baxter's right gripper's reach. In practice, it seemed easy to place it on the right of the page.
 
 ## User Setup/Running the System
 
@@ -40,7 +52,11 @@ Then, on screen, you can follow the commands (printed on the terminal) in order:
 
 2. Next, place the bowl under the left gripper so that the left-centre side of the bowl is aligned in the centre of the gripper, then press enter on the keyboard to get the next command.
 
-3. Lastly, place the left gripper on level with the table and the right gripper above wherever the customer's sweet container is, then press enter.
+3. After that, place the left gripper on level with the table 
+
+4. Finally, place the right gripper above wherever the customer's sweet container is, then press enter.
+
+
 
 After these tasks, stand away from the camera and the system will run. From then a customer can approach Baxter's camera to start the interaction.
 
@@ -56,6 +72,8 @@ Then, on screen, you can follow the commands (printed on the terminal) in order:
 
 1. Make sure you open the Android app on the device (make sure it is fully closed first), and enter the IP address shown in the terminal.
 
-2. Secondly, place the left gripper on level with the table and the right gripper above wherever the customer's sweet container is, then press enter.
+2. Secondly, place the left gripper on level with the table 
+
+3. Lastly, place the right gripper above wherever the customer's sweet container is, then press enter.
 
 After these tasks, stand away from the camera and the system will run. From then a customer can approach Baxter's camera to start the interaction.
