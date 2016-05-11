@@ -14,6 +14,17 @@ The code provided will is separated into different catkin packages, so that each
 
 First of all, following ROS tutorials, create a catkin workspace to add packages into. Once in the catkin workspace, ```git clone``` the repository into that directory so you have the interaction, perception and manipulation packages available to you.
 
+Before you can run ```catkin_make``` on the catkin workspace, make sure you have the following installed on your ROS system:
+
+1. The ROS Baxter toolset installed and setup.
+
+2. Strands_ui installed to ROS, instructions found [here](https://github.com/strands-project/strands_ui). Make sure the mary_tts package is installed and working. The command:
+```rosdep check --from-paths /path/to/your/catkin_ws/src --ignore-src``` comes in handy to install needed dependencies for this package.
+
+3. Python 2.7 along with standard modules (if any nodes produce an error, please install extra modules too).
+
+After these are all installed, run ```catkin_make``` to complete installing the system. If any errors come up here, it will most likely be dependencies, which can be searched and manually installed to fix.
+
 ## Materials
 
 To set up the shop for Baxter, you need five main items. 
@@ -58,7 +69,7 @@ Then, on screen, you can follow the commands (printed on the terminal) in order:
 
 4. Finally, place the right gripper above wherever the customer's sweet container is, then press enter.
 
-
+![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/setupresized.jpg)
 
 After these tasks, stand away from the camera and the system will run. From then a customer can approach Baxter's camera to start the interaction.
 
