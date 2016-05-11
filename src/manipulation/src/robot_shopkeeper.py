@@ -562,17 +562,14 @@ if __name__ == '__main__':
     baxter.moveToSweets()
     comms.reset_sweets()
 
-    # A hard coded bowl value is used without the Kinect
-    [bowlX,bowlY,bowlZ] = [0.6,0.25, -0.2]
-    # Make baxter move where the bowl should be to help in setup
-    baxter.move_to_grab_bowl(bowlX , bowlY, bowlZ)
+    # Reset the vision system and retrieve the bowl centre from the table
+    baxter.reset_bowl()
+    [bowlX,bowlY,bowlZ] = baxter.get_pos_client()
 
     # Print setup command prompts, with user inputting enter to wait for setup
     # tasks being complete
     print "Make sure the app is open and the IP address on the terminal is \
 entered on the android device\n\n"
-    print "Place the bowl of sweets so the left rim of the bowl is between \
-Baxter's gripper\n\n"
     raw_input("Press Enter when this step is complete...\n\n")
 
     print "Place the left gripper so it is touching the table and the right \
