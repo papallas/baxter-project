@@ -28,9 +28,9 @@ To set up the shop for Baxter, you need five main items.
 
 5. An Android device is needed, which will have the voice recognition application installed on it, discussed later on.
 
-![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/bowl.jpg =100x200) ![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/bag.jpg =100x200) 
+![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/bowl.jpg) ![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/bag.jpg) 
 
-![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/paper.jpg =200x100)![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/orientation.jpg =200x100)
+![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/paper.jpg)![](https://github.com/um10kh/baxter-project/blob/master/readmeimages/orientation.jpg)
 
 To orient these items, the bowl should be somewhere to the left of the page (if you aren't using a Kinect, you can place it in position after running). The page should be placed in the middle and the sweet container can be anywhere within Baxter's right gripper's reach. In practice, it seemed easy to place it on the right of the page.
 
