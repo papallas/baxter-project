@@ -25,6 +25,8 @@ Before you can run ```catkin_make``` on the catkin workspace, make sure you have
 
 After these are all installed, run ```catkin_make``` to complete installing the system. If any errors come up here, it will most likely be dependencies, which can be searched and manually installed to fix.
 
+Finally, the Android device needs to install the application - located [here](https://github.com/um10kh/baxter-project/blob/master/App/SweetShop.apk). Open this file on the device, and allow permissions to install once from unknown source. Make sure the voice recogintion default setting is set to Google's voice recognition (installed on Android devices through the Google app).
+
 ## Materials
 
 To set up the shop for Baxter, you need five main items. 
