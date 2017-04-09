@@ -1,3 +1,8 @@
+**Note:** This project was designed and developed by Kieran Haden at the University of Leeds (2015-2016). This is a forked version of the Kieran's project. The main reason of forking Kieran's project is that is required to be integrated with Rafael Papalla's project (2016-2017) that are closely related and they need to be integrated. This will require some changes to Kieran's project to append some code to his main script to make the integration.
+
+Kieran's original repository: https://github.com/um10kh/baxter-project
+Rafael's original repository: https://github.com/papallas/baxter_cashier
+
 # Third year final project - The Robot Shopkeeper
 
 This is my third year project, aiming to develop an integrated robotics system using a Baxter robot to allow Baxter to be able to run a sweet shop and respond to customers.
