@@ -42,6 +42,8 @@ from std_msgs.msg import UInt16
 
 from sound_play.libsoundplay import SoundClient
 
+from baxter_cashier_manipulation import Cashier
+
 # initialise ros node
 rospy.init_node("shopkeeper", anonymous = True)
 
@@ -543,6 +545,11 @@ def send_image(img_name):
 if __name__ == '__main__':
     # Initialise a baxter object, of shopkeeper class
     baxter = ShopKeeper()
+
+    # Note that Cashier's constructor will ask for some commands from the
+    # operator like to calibrate the hand above the first banknote etc.
+    cashier = Cashier()
+
     # Set up the communications with Baxter and other nodes
     comms = Communications(baxter)
 
@@ -777,6 +784,19 @@ and ",redRequest," red sweets"
         # After the sweets have been given, state that Baxter is done
         if (blueRequest != 0):
             baxter.speak('Here are your blue sweets.')
+
+        # ====================================================================
+        #                 Begining of Baxter Cashier Integration
+        # ====================================================================
+
+        grand_total = blueRequest + greenRequest + redRequest
+        cashier.amount_due = grand_total
+        cashier.interact_with_customer()
+
+        # ====================================================================
+        #                 End of Baxter Cashier Integration
+        # ====================================================================
+
 
         # Baxter is happy at the end of the process - thanks customer etc
         send_image('happy')
