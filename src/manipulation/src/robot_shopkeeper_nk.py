@@ -27,7 +27,7 @@ from baxter_core_msgs.srv import (
     SolvePositionIKRequest,
 )
 from manipulation.srv import *
-from manipulation.msg import *
+# from manipulation.msg import *
 
 import baxter_interface
 
@@ -41,8 +41,10 @@ import math
 from std_msgs.msg import UInt16
 
 from sound_play.libsoundplay import SoundClient
-
-from baxter_cashier_manipulation import Cashier
+import roslib
+roslib.load_manifest("baxter_cashier_manipulation")
+from baxter_cashier_manipulation import *
+from cashier import Cashier
 
 # initialise ros node
 rospy.init_node("shopkeeper", anonymous = True)
