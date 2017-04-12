@@ -548,10 +548,6 @@ if __name__ == '__main__':
     # Initialise a baxter object, of shopkeeper class
     baxter = ShopKeeper()
 
-    # Note that Cashier's constructor will ask for some commands from the
-    # operator like to calibrate the hand above the first banknote etc.
-    cashier = Cashier()
-
     # Set up the communications with Baxter and other nodes
     comms = Communications(baxter)
 
@@ -593,13 +589,17 @@ gripper so it is above the sweet bag/container\n\n"
     leftpose = baxter.get_pose("left")
     baxter.MINZ = leftpose[2]
     # Get the right arm's position as the one used to drop sweets into the bag
-    baxter.bag = baxter.get_pose("right")
-
-    print "The setup is now complete"
+    baxter.bag = baxter.get_pose("right")    
 
     # Move the left arm back to normal untucked position
     baxter.left_interface.set_joint_position_speed(0.5)
     baxter.move_and_rotate("left", 0.5815, 0.1831, 0.1008, 3.1209, 0.0492, 2.8580)
+
+    # Note that Cashier's constructor will ask for some commands from the
+    # operator like to calibrate the hand above the first banknote etc.
+    cashier = Cashier()
+
+    print "The setup is now complete"
 
     # PRINT INTRO TO TERMINAL
     print "###################################################################"
