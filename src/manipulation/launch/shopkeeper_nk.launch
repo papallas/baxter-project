@@ -16,7 +16,7 @@
 <!-- Move Baxter's arms to the untucked position and setup the cameras at the correct resolutions-->
 <node pkg="baxter_tools" type="camera_control.py" name="right_camera_setup" args="-o right_hand_camera -r 1280x800"/>
 <node pkg="baxter_tools" type="camera_control.py" name="left_camera_setup" args="-c left_hand_camera"/>
-<node pkg="baxter_tools" type="camera_control.py" name="head_camera_setup" args="-o head_camera -r 480x300"/>
+<node pkg="baxter_tools" type="camera_control.py" name="head_camera_setup" args="-o head_camera -r 480x300"/> -->
 <node pkg="baxter_tools" type="tuck_arms.py" name="tuck_arms" args="-u"/>
 
 <!-- Run the shopkeeper node without Kinect -->

@@ -4,6 +4,7 @@ import argparse
 import sys, os, inspect
 import struct
 import cv2
+import time
 
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
@@ -26,6 +27,7 @@ from baxter_core_msgs.srv import (
     SolvePositionIK,
     SolvePositionIKRequest,
 )
+from baxter_core_msgs.msg import(DigitalIOState)
 from manipulation.srv import *
 # from manipulation.msg import *
 
@@ -47,7 +49,7 @@ from baxter_cashier_manipulation import *
 from cashier import Cashier
 
 # initialise ros node
-rospy.init_node("shopkeeper", anonymous = True)
+rospy.init_node("shopkeeper")
 
 # file directory
 directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -541,12 +543,32 @@ def send_image(img_name):
     pub.publish(msg)
     rospy.sleep(1)
 
+def release_robot():
+    pub_left = rospy.Publisher('/robot/digital_io/left_lower_cuff/state', DigitalIOState, queue_size=10)
+    pub_right = rospy.Publisher('/robot/digital_io/right_lower_cuff/state', DigitalIOState, queue_size=10)
+
+    timeout_start = time.time()
+    timeout = 1   # [seconds]
+    while time.time() < timeout_start + timeout:
+        pub_left.publish(1, True)
+
+    timeout_start = time.time()
+    timeout = 1   # [seconds]
+    while time.time() < timeout_start + timeout:
+        pub_right.publish(1, True)
 
 # Main function - the basic system logic for Baxter to run the shop - uses
 # loops and managing variables where appropriate
 if __name__ == '__main__':
+    release_robot()
+
+    # Note that Cashier's constructor will ask for some commands from the
+    # operator like to calibrate the hand above the first banknote etc.
+    cashier = Cashier()
+
     # Initialise a baxter object, of shopkeeper class
     baxter = ShopKeeper()
+
 
     # Set up the communications with Baxter and other nodes
     comms = Communications(baxter)
@@ -589,15 +611,11 @@ gripper so it is above the sweet bag/container\n\n"
     leftpose = baxter.get_pose("left")
     baxter.MINZ = leftpose[2]
     # Get the right arm's position as the one used to drop sweets into the bag
-    baxter.bag = baxter.get_pose("right")    
+    baxter.bag = baxter.get_pose("right")
 
     # Move the left arm back to normal untucked position
     baxter.left_interface.set_joint_position_speed(0.5)
     baxter.move_and_rotate("left", 0.5815, 0.1831, 0.1008, 3.1209, 0.0492, 2.8580)
-
-    # Note that Cashier's constructor will ask for some commands from the
-    # operator like to calibrate the hand above the first banknote etc.
-    cashier = Cashier()
 
     print "The setup is now complete"
 
@@ -790,7 +808,7 @@ and ",redRequest," red sweets"
         # ====================================================================
         #                 Begining of Baxter Cashier Integration
         # ====================================================================
-
+        release_robot()
         grand_total = blueRequest + greenRequest + redRequest
         cashier.amount_due = grand_total
         cashier.interact_with_customer()
