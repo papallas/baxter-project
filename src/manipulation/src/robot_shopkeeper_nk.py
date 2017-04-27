@@ -560,15 +560,8 @@ def release_robot():
 # Main function - the basic system logic for Baxter to run the shop - uses
 # loops and managing variables where appropriate
 if __name__ == '__main__':
-    release_robot()
-
-    # Note that Cashier's constructor will ask for some commands from the
-    # operator like to calibrate the hand above the first banknote etc.
-    cashier = Cashier()
-
     # Initialise a baxter object, of shopkeeper class
     baxter = ShopKeeper()
-
 
     # Set up the communications with Baxter and other nodes
     comms = Communications(baxter)
@@ -627,6 +620,12 @@ gripper so it is above the sweet bag/container\n\n"
 
     # Whilst there, get the page centre (should be no sweets initially)
     num, centres, anglelist, page = comms.get_sweet_client()
+
+    # rospy.sleep(15)
+
+    # Note that Cashier's constructor will ask for some commands from the
+    # operator like to calibrate the hand above the first banknote etc.
+    # cashier = Cashier()
 
     # THIS IS THE MAIN SHOP LOOP THAT WILL BE RUN CONSTANTLY AFTER LAUNCHING
     while True:
@@ -808,10 +807,10 @@ and ",redRequest," red sweets"
         # ====================================================================
         #                 Begining of Baxter Cashier Integration
         # ====================================================================
-        release_robot()
-        grand_total = blueRequest + greenRequest + redRequest
-        cashier.amount_due = grand_total
-        cashier.interact_with_customer()
+        # release_robot()
+        # grand_total = blueRequest + greenRequest + redRequest
+        # cashier.amount_due = grand_total
+        # cashier.interact_with_customer()
 
         # ====================================================================
         #                 End of Baxter Cashier Integration
