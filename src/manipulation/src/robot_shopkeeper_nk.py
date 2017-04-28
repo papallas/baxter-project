@@ -49,7 +49,7 @@ from baxter_cashier_manipulation import *
 from cashier import Cashier
 
 # initialise ros node
-rospy.init_node("shopkeeper")
+rospy.init_node("shopkeeper", anonymous = True)
 
 # file directory
 directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -557,9 +557,31 @@ def release_robot():
     while time.time() < timeout_start + timeout:
         pub_right.publish(1, True)
 
+import subprocess, signal, os
+import atexit
+
+global p
+global p2
+
+def signal_handler(signal, frame):
+        print('You pressed Ctrl+C!')
+        p.kill()
+        p2.kill()
+        sys.exit(0)
+
 # Main function - the basic system logic for Baxter to run the shop - uses
 # loops and managing variables where appropriate
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
+    release_robot()
+
+    # Note that Cashier's constructor will ask for some commands from the
+    # operator like to calibrate the hand above the first banknote etc.
+    cashier = Cashier()
+
+    p = subprocess.Popen(["rosrun", "perception", "find_colours.py"], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(["rosrun", "interaction", "find_person.py"], stdout=subprocess.PIPE)
+
     # Initialise a baxter object, of shopkeeper class
     baxter = ShopKeeper()
 
@@ -621,15 +643,10 @@ gripper so it is above the sweet bag/container\n\n"
     # Whilst there, get the page centre (should be no sweets initially)
     num, centres, anglelist, page = comms.get_sweet_client()
 
-    # rospy.sleep(15)
-
-    # Note that Cashier's constructor will ask for some commands from the
-    # operator like to calibrate the hand above the first banknote etc.
-    # cashier = Cashier()
-
     # THIS IS THE MAIN SHOP LOOP THAT WILL BE RUN CONSTANTLY AFTER LAUNCHING
     while True:
         send_image('bored')
+
         # First of all, wait for a customer approaches, specifying enter to
         # check for customer entry
         print "Waiting for a customer to approach...\n"
@@ -807,10 +824,16 @@ and ",redRequest," red sweets"
         # ====================================================================
         #                 Begining of Baxter Cashier Integration
         # ====================================================================
-        # release_robot()
-        # grand_total = blueRequest + greenRequest + redRequest
-        # cashier.amount_due = grand_total
-        # cashier.interact_with_customer()
+        os.kill(p.pid, signal.SIGSTOP)
+        os.kill(p2.pid, signal.SIGSTOP)
+
+        release_robot()
+        grand_total = blueRequest + greenRequest + redRequest
+        cashier.amount_due = grand_total
+        cashier.interact_with_customer()
+
+        os.kill(p.pid, signal.SIGCONT)
+        os.kill(p2.pid, signal.SIGCONT)
 
         # ====================================================================
         #                 End of Baxter Cashier Integration
