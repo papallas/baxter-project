@@ -564,10 +564,17 @@ global p
 global p2
 
 def signal_handler(signal, frame):
-        print('You pressed Ctrl+C!')
-        p.kill()
-        p2.kill()
-        sys.exit(0)
+    print('You pressed Ctrl+C!')
+
+    print("Trying to kill find_colours.py")
+    p.kill()
+    print("find_colours.py killed")
+
+    print("Trying to kill find_person.py")
+    p2.kill()
+    print("find_person.py killed")
+
+    sys.exit(0)
 
 # Main function - the basic system logic for Baxter to run the shop - uses
 # loops and managing variables where appropriate
@@ -822,7 +829,7 @@ and ",redRequest," red sweets"
             baxter.speak('Here are your blue sweets.')
 
         # ====================================================================
-        #                 Begining of Baxter Cashier Integration
+        #                 Beginning of Baxter Cashier Integration
         # ====================================================================
         os.kill(p.pid, signal.SIGSTOP)
         os.kill(p2.pid, signal.SIGSTOP)
