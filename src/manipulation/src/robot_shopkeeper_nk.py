@@ -506,6 +506,9 @@ class Communications:
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
+    def reset_head(self):
+        self.baxter.head.set_pan(0)
+
     # Get in position and wait for someone to wait in front of Baxter
     def wait_for_person(self, request):
         # Move the right arm out of the way of the head's camera using preset
@@ -831,6 +834,7 @@ and ",redRequest," red sweets"
         # ====================================================================
         #                 Beginning of Baxter Cashier Integration
         # ====================================================================
+        comms.reset_head()
         os.kill(p.pid, signal.SIGSTOP)
         os.kill(p2.pid, signal.SIGSTOP)
 
